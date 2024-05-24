@@ -25,7 +25,6 @@ def SendNotice(body):
         emails_placeholder = ', '.join(['%s'] * len(emails))
         aircraft_names_placeholder = ', '.join(['%s'] * len(aircraft_names))
         
-        # email not list -> email =%s ,...
         sql_statement = f"""
         SELECT DISTINCT email, members_id
         FROM (
@@ -102,7 +101,7 @@ def SendNotice(body):
 response = SendNotice({
     "user": "user",
     "role": ["role1", "role2"],
-    "emails": ["Ayhan@yahoo.com", "Sahar@example.com"],
+    "emails": ["Ayhan@yahoo.com", "example@example.com"],
     "aircraftNames": ["air2", "air3"]
 })
 print('Response:', response)

@@ -1,5 +1,9 @@
 import mysql.connector
 
+# order by date desc ->filter by status ->Active or archived
+# show all document
+# Paginated :limit and offset
+
 
 def document(body):
     connection = None
@@ -24,13 +28,12 @@ def document(body):
         print("procceesing request for user",user)
 
     #create a cursor
-    
         cur = connection.cursor()
         
         # when select
         # just a category name
         if (category_name and not aircraft_name):
-            sql_statement_1 = """   SELECT d.name
+            sql_statement_1 = """   SELECT d.name, d.created_at,d.archived
                                     FROM categories As c
                                     INNER JOIN subcategories s ON  c.id = s.categories_id 
                                     INNER JOIN documents AS d ON  d.subcategory_id = s.subcategory_id
@@ -112,8 +115,8 @@ def document(body):
             
 response = document({
     "user": "user",
-   # "category_name" : "cat1",
-    "aircraft_name" : "air1"
+   "category_name" : "cat1",
+   "aircraft_name" : "air1"
    
 })
 print('Response:',response)

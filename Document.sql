@@ -19,7 +19,7 @@ BEGIN
             a.name = aircraft_name;
 
 
-    ELSE IF aircraft_name IS NULL AND category_name IS NOT NULL THEN
+    ELSEIF aircraft_name IS NULL AND category_name IS NOT NULL THEN
         SELECT 
             d.name
         FROM 
@@ -34,7 +34,6 @@ BEGIN
             d.subcategory_id = s.subcategory_id
         WHERE  
             c.name = category_name;
-
 
     ELSE      
         SELECT 
