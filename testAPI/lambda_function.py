@@ -1,6 +1,4 @@
 import json
-import mysql.connector
-import os
 
 from post_method import post_method
 from get_method import get_method
