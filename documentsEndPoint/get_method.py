@@ -2,9 +2,9 @@ from mysql.connector import Error
 import mysql.connector
 import os
 
-def get_method(body):
+def get_method(parameters):
     try:
-        query = read_file("test.sql")
+        
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
             user= os.environ.get('USER'),
@@ -12,6 +12,11 @@ def get_method(body):
             database= "",
         )
         cursor = connection.cursor()
+        query = "SELECT "
+        name = parameters.get('name')
+
+
+
         cursor.execute(query)
         if query.strip().upper().startswith("SELECT"):
             results = cursor.fetchall()
@@ -23,8 +28,9 @@ def get_method(body):
     except Error as e:
         print(f"Error: {e}")
     finally:
-        if connection.is_connected():
+        if cursor is not None:
             cursor.close()
+        if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
     return {
@@ -34,7 +40,7 @@ def get_method(body):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
             },
-        'body': "Succed"
+        'body': "Succeed"
     }
 def read_file(file_path):
     with open(file_path, 'r') as file:
