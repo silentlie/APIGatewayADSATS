@@ -1,9 +1,8 @@
-import json
 from mysql.connector import Error
 import mysql.connector
 import os
 
-def get_method(parameters):
+def delete_method(body):
     try:
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
@@ -12,15 +11,15 @@ def get_method(parameters):
             database= "adsats_database",
         )
         cursor = connection.cursor()
-        name = parameters["name"] if "name" in parameters else None
-        emails = parameters["emails"].split(',') if "emails" in parameters else None
-        timeRange = parameters["timeRange"].split(',') if "timeRange" in parameters else None
-        archived = parameters["archived"] if "archived" in parameters else None
-        aircrafts = parameters["aircrafts"].split(',') if "aircrafts" in parameters else None
-        columnName = parameters["columnName"] if "columnName" in parameters else None
-        asc = parameters["asc"] if "asc" in parameters else None
-        limit = parameters["limit"]
-        offset = parameters["offset"]
+        name = body.get("name", default=None)
+        emails = body.get("emails", default=None).split(',')
+        timeRange = body.get("timeRange", default=None).split(',')
+        archived = body.get("archived", default=None)
+        aircrafts = body.get("aircrafts", default=None).split(',')
+        columnName = body.get("clumnName", default=None)
+        asc = body.get("asc", default=None)
+        limit = body.get("limit")
+        offset = body.get("offset")
         query = """
         SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
         FROM documents AS d
@@ -61,9 +60,8 @@ def get_method(parameters):
         
         cursor.execute(query, params)
         results = cursor.fetchall()
-        response = []
         for row in results:
-            response.append(dict(row))
+            # need to convert to a list of dict/json
             print(row)
     except Error as e:
         print(f"Error: {e}")
@@ -80,5 +78,5 @@ def get_method(parameters):
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
         # this suppose to return all rows
-        'body': json.dumps(response, indent=4, separators=(',', ':'))
+        'body': "Succeed"
     }
