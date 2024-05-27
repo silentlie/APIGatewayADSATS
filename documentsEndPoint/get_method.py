@@ -5,65 +5,16 @@ import os
 
 def get_method(parameters):
     try:
-        connection = mysql.connector.connect(
-            host= os.environ.get('HOST'),
-            user= os.environ.get('USER'),
-            password= os.environ.get('PASSWORD'),
-            database= "adsats_database",
-        )
+        connection = connect_to_db()
         cursor = connection.cursor()
-        name = parameters["name"] if "name" in parameters else None
-        emails = parameters["emails"].split(',') if "emails" in parameters else None
-        timeRange = parameters["timeRange"].split(',') if "timeRange" in parameters else None
-        archived = parameters["archived"] if "archived" in parameters else None
-        aircrafts = parameters["aircrafts"].split(',') if "aircrafts" in parameters else None
-        columnName = parameters["columnName"] if "columnName" in parameters else None
-        asc = parameters["asc"] if "asc" in parameters else None
-        limit = parameters["limit"]
-        offset = parameters["offset"]
-        query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
-        FROM documents AS d
-        JOIN users AS u ON d.uploaded_by_id = u.user_id
-        JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
-        JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
-        JOIN aircrafts AS a ON ad.aircrafts_id = a.aircraft_id
-        """
-        conditions = []
-        params = []
-        if name is not None:
-            conditions.append("d.file_name = %s")
-            params.append(name)
-        if emails is not None:
-            placeholders = ', '.join(['%s'] * len(emails))
-            conditions.append(f"u.emails IN ({placeholders})")
-            params.extend(emails)
-        if timeRange is not None:
-            conditions.append("d.created_at BETWEEN %s AND %s")
-            params.extend(timeRange)
-        if archived is not None:
-            conditions.append("d.archived = %s")
-            params.append(archived)
-        if aircrafts is not None:
-            placeholders = ', '.join(['%s'] * len(aircrafts))
-            conditions.append(f"ad.aircraft_id IN ({placeholders})")
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-        if columnName is not None:
-            query += "ORDER BY d.%s %s"
-            params.append(columnName)
-            if asc:
-                params.append('ASC')
-            else:
-                params.append('DESC')
-        query += "LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
+        
+        query, params = build_query(parameters)
         
         cursor.execute(query, params)
         results = cursor.fetchall()
         response = []
         for row in results:
-            response.append(dict(row))
+            response.append(row)
             print(row)
     except Error as e:
         print(f"Error: {e}")
@@ -80,6 +31,64 @@ def get_method(parameters):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-        # this suppose to return all rows
         'body': json.dumps(response, indent=4, separators=(',', ':'))
     }
+
+def build_query(parameters):
+    query = """
+    SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
+    FROM documents AS d
+    JOIN users AS u ON d.uploaded_by_id = u.user_id
+    JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
+    JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
+    JOIN aircrafts AS a ON ad.aircrafts_id = a.aircraft_id
+    """
+
+    filters = []
+    params = []
+    
+    if 'name' in parameters:
+        filters.append("d.file_name = %s")
+        params.append(parameters["name"])
+    
+    if 'emails' in parameters:
+        emails = parameters["emails"].split(',')
+        placeholders = ', '.join(['%s'] * len(emails))
+        filters.append(f"u.email IN ({placeholders})")
+        params.extend(emails)
+    
+    if 'timeRange' in parameters:
+        time_range = parameters["timeRange"].split(',')
+        filters.append("d.created_at BETWEEN %s AND %s")
+        params.extend(time_range)
+    
+    if 'archived' in parameters:
+        filters.append("d.archived = %s")
+        params.append(parameters["archived"])
+    
+    if 'aircrafts' in parameters:
+        aircrafts = parameters["aircrafts"].split(',')
+        placeholders = ', '.join(['%s'] * len(aircrafts))
+        filters.append(f"ad.aircraft_id IN ({placeholders})")
+        params.extend(aircrafts)
+    
+    if filters:
+        query += " WHERE " + " AND ".join(filters)
+    
+    if 'columnName' in parameters:
+        order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
+        query += f" ORDER BY d.{parameters["columnName"]} {order}"
+    
+    query += " LIMIT %s OFFSET %s"
+    limit = parameters["limit"]
+    offset = parameters["offset"]
+    params.extend([limit, offset])
+    return query, params
+
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
