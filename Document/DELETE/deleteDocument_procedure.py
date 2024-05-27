@@ -7,12 +7,12 @@ def Delete_DocProc(body):
             host="localhost",
             user="root",
             password="",
-            database="adsats_database"
+            database="new_adsats_database"
         )
         print("Database connected successfully")
 
         # Extract user input
-        document_name = body.get("documentname")
+        document_name = body.get("document_name")
         
         # Create a cursor object
         cursor = connection.cursor(buffered=True)
@@ -37,6 +37,6 @@ def Delete_DocProc(body):
 
 # Sample input to the function
 response = Delete_DocProc({
-    "documentname": "doc2"
+    "document_name": "Purchase Order #91011.pdf"
 })
 print('Response:', response)

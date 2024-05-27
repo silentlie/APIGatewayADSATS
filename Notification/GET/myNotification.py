@@ -9,7 +9,7 @@ def MyNotification(body):
             host="localhost",
             user="root",
             password="",
-            database="adsats_database"
+            database="new_adsats_database"
         )
         
         email = body["email"]
@@ -22,10 +22,18 @@ def MyNotification(body):
         
         sql_statement_1 = """
             SELECT n.deadline_at, n.subject, nf.read_at, nf.status
-            FROM notices AS n
-            INNER JOIN notifications AS nf ON n.id = nf.notices_id
-            INNER JOIN members AS m ON nf.members_id = m.id
-            WHERE m.email = %s
+            FROM
+                notices AS n
+            INNER JOIN 
+                notifications AS nf 
+            ON 
+                n.notice_id = nf.notice_id
+            INNER JOIN 
+                users AS u 
+            ON 
+                nf.user_id = u.user_id
+            WHERE u.email = %s
+            
             LIMIT %s OFFSET %s
         """
         
@@ -53,7 +61,7 @@ def MyNotification(body):
 
 response = MyNotification({
     "user": "user",
-    "email": "Shima@yahoo.com",
+    "email": "amckeran2@instagram.com",
     "limit": 2,
     "page": 1
 })

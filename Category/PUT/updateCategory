@@ -1,0 +1,64 @@
+import mysql.connector
+
+# endpoint:url/updatecategory
+def UpdateCategory(body):
+    connection = None
+    cur = None
+    try:
+        connection = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="",
+            database="new_adsats_database"
+        )
+        print('Database connected correctly')
+
+        user = body["user"]
+        old_category_name = body["old_category_name"]
+        new_category_name = body["new_category_name"]
+
+        print("Processing request for user", user)
+
+        # Create a cursor
+        cur = connection.cursor()
+
+        # Select categoryID
+        select_categoryID = """ SELECT category_id
+                                FROM categories
+                                WHERE name = %s
+                            """
+        cur.execute(select_categoryID, ( old_category_name,))
+        category_id = cur.fetchone()
+
+        if category_id:
+            old_category_id = category_id[0]
+            print(f"Category ID for '{ old_category_name}': {category_id}")
+            
+             # update  categories
+            update_category = """UPDATE  categories
+                                 SET name = %s
+                                 WHERE category_id = %s"""
+            cur.execute(update_category, (new_category_name,old_category_id,))
+            connection.commit()
+            print("Category updated successfully")
+        else:
+            print("Category does not exist")
+
+    except mysql.connector.Error as err:
+        print(f"Error: {err}")
+        return None
+
+    finally:
+        if cur is not None:
+            cur.close()
+        if connection is not None and connection.is_connected():
+            connection.close()
+            print('Database connection closed')
+
+# Sample input to the function
+response = UpdateCategory({
+    "user": "user",
+    "old_category_name": "aircraft22",
+    "new_category_name" :"aircraft"
+})
+print('Response:', response)

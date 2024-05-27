@@ -5,14 +5,13 @@ def MyNotification(body) :
     
     connection = None
     cur = None
-    
     try:
         
         connection = mysql.connector.connect(
             host ="localhost",
             username ="root" ,
             password ="" ,
-            database="adsats_database"
+            database="new_adsats_database"
             )
         
         user = body["user"]
@@ -22,10 +21,10 @@ def MyNotification(body) :
         
         #use members , notices 
         # all notices that have been created by person login
-        sql_statement_1 = """SELECT n.deadline_at,n.subject,nf.read_at,nf.status
+        sql_statement_1 = """SELECT n.deadline_at,n.subject
                              FROM notices AS n 
-                             INNER JOIN members AS m 
-                             ON n.members_id = m.id
+                             INNER JOIN users AS u 
+                             ON n.created_by_id = u.user_id
                              WHERE email =%s"""
         
         cur.execute(sql_statement_1,(email,))
@@ -51,7 +50,7 @@ def MyNotification(body) :
             
 response = MyNotification({
     "user": "user",
-    "email":"Shima@yahoo.com"
+    "email":"amckeran2@instagram.com"
   
    
 })

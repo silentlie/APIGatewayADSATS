@@ -10,13 +10,13 @@ def DeleteDocument(body):
             host="localhost",
             user="root",  # Corrected 'username' to 'user'
             password="",
-            database="adsats_database"
+            database="new_adsats_database"
         )
         
         print("Database connected correctly")
         
         user = body["user"]
-        documentName = body.get("documentName")
+        document_name = body.get("document_name")
 
         print("Processing request for user", user)
 
@@ -25,11 +25,11 @@ def DeleteDocument(body):
         
         # Select the name of the documents
         selectdocument_statement = """
-            SELECT id 
+            SELECT document_id 
             FROM documents 
-            WHERE name = %s
+            WHERE file_name = %s
         """
-        cur.execute(selectdocument_statement, (documentName,))
+        cur.execute(selectdocument_statement, (document_name,))
         docid_result = cur.fetchall()
         
         print("Documents found:", len(docid_result))
@@ -37,34 +37,34 @@ def DeleteDocument(body):
         for id in docid_result:
             print("Processing document ID:", id[0])
 
-            # Delete from aircrafts_links -> Forignkey document_id
-            aircraftslinks_forignkey_statement = """
-                DELETE FROM aircrafts_links
+            # Delete from aircraft_documents -> Forignkey document_id
+            aircraftdocument_forignkey_statement = """
+                DELETE FROM aircraft_documents
                 WHERE documents_id = %s
             """
-            cur.execute(aircraftslinks_forignkey_statement, (id[0],))
-            print('Deleted from aircrafts_links')
+            cur.execute(aircraftdocument_forignkey_statement, (id[0],))
+            print('Deleted from aircraft_documents')
 
-            # Delete from documents_has_members -> Forignkey document_id
-            dochasmember_forignkey_statement = """
-                DELETE FROM documents_has_members
-                WHERE documents_id = %s
-            """
-            cur.execute(dochasmember_forignkey_statement, (id[0],))
-            print('Deleted from documents_has_members')
+            # # Delete from documents_has_members -> Forignkey document_id
+            # dochasmember_forignkey_statement = """
+            #     DELETE FROM documents_has_members
+            #     WHERE documents_id = %s
+            # """
+            # cur.execute(dochasmember_forignkey_statement, (id[0],))
+            # print('Deleted from documents_has_members')
 
-            # Delete from notifications_has_documents -> Forignkey document_id
-            notificationhasdoc_forignkey_statement = """
-                DELETE FROM notifications_has_documents
-                WHERE documents_id = %s
+            # Delete from notice_documents -> Forignkey document_id
+            notice_documents = """
+                DELETE FROM notice_documents
+                WHERE document_id = %s
             """
-            cur.execute(notificationhasdoc_forignkey_statement, (id[0],))
-            print('Deleted from notifications_has_documents')
+            cur.execute(notice_documents, (id[0],))
+            print('Deleted from notice_documents')
 
             # Delete from documents -> parent
             document_statement = """
                 DELETE FROM documents
-                WHERE id = %s
+                WHERE document_id = %s
             """
             cur.execute(document_statement, (id[0],))
             print('Deleted from documents')
@@ -89,6 +89,6 @@ def DeleteDocument(body):
 
 response = DeleteDocument({
     "user": "user",
-    "documentName": "doc1"
+    "document_name": "Aircraft Purchase Agreement.pdf"
 })
 print('Response:', response)
