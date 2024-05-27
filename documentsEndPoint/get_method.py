@@ -11,13 +11,17 @@ def get_method(parameters):
         cursor = connection.cursor()
         
         query, params = build_query(parameters)
-        
+        total_records = get_total_records(query, params, cursor)
         cursor.execute(query, params)
         results = cursor.fetchall()
-        response = []
+        rows = []
         for row in results:
-            response.append(row)
+            rows.append(row)
             print(row)
+        response = {
+            "total_records": total_records,
+            "rows": json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+        }
     except Error as e:
         print(f"Error: {e._full_msg}")
         error_message = e._full_msg
@@ -44,15 +48,17 @@ def get_method(parameters):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-        'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+        'body': response
     }
 
 def build_query(parameters):
     query = """
-    SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name AS subcategories, GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
+    SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, s.name AS subcategory, c.name AS category
+    , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
     FROM documents AS d
     JOIN users AS u ON d.uploaded_by_id = u.user_id
-    JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
+    JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
+    JOIN categories AS c ON s.category_id = c.category_id
     LEFT OUTER JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
     LEFT OUTER JOIN aircrafts AS a ON ad.aircrafts_id = a.aircraft_id
     """
@@ -61,7 +67,7 @@ def build_query(parameters):
     params = []
     
     if 'name' in parameters:
-        filters.append("d.file_name = %s")
+        filters.append("d.file_name LIKE %s")
         params.append(parameters["name"])
     
     if 'emails' in parameters:
@@ -107,6 +113,12 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
+
+def get_total_records(query, params, cursor):
+    total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
+    cursor.execute(total_query, params)
+    result = cursor.fetchone()
+    return result[0]
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):

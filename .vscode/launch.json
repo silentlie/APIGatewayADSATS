@@ -14,6 +14,36 @@
                 "payload": {},
                 "environmentVariables": {}
             }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "documentsEndPoint:lambda_function.lambda_handler (python3.12)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/documentsEndPoint",
+                "lambdaHandler": "lambda_function.lambda_handler"
+            },
+            "lambda": {
+                "runtime": "python3.12",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "documentsEndPoint:lambda_function.lambda_handler (python3.12)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/documentsEndPoint",
+                "lambdaHandler": "lambda_function.lambda_handler"
+            },
+            "lambda": {
+                "runtime": "python3.12",
+                "payload": {},
+                "environmentVariables": {}
+            }
         }
     ]
 }
