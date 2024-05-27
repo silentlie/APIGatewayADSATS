@@ -12,15 +12,15 @@ def get_method(parameters):
             database= "adsats_database",
         )
         cursor = connection.cursor()
-        name = parameters.get("name", default=None)
-        emails = parameters.get("emails", default=None).split(',')
-        timeRange = parameters.get("timeRange", default=None).split(',')
-        archived = parameters.get("archived", default=None)
-        aircrafts = parameters.get("aircrafts", default=None).split(',')
-        columnName = parameters.get("clumnName", default=None)
-        asc = parameters.get("asc", default=None)
-        limit = parameters.get("limit")
-        offset = parameters.get("offset")
+        name = parameters["name"] if "name" in parameters else None
+        emails = parameters["emails"].split(',') if "emails" in parameters else None
+        timeRange = parameters["timeRange"].split(',') if "timeRange" in parameters else None
+        archived = parameters["archived"] if "archived" in parameters else None
+        aircrafts = parameters["aircrafts"].split(',') if "aircrafts" in parameters else None
+        columnName = parameters["columnName"] if "columnName" in parameters else None
+        asc = parameters["asc"] if "asc" in parameters else None
+        limit = parameters["limit"]
+        offset = parameters["offset"]
         query = """
         SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
         FROM documents AS d
