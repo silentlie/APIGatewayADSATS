@@ -15,6 +15,12 @@ def get_method(parameters):
         # the method return query and parameters for binding
         query, params = build_query(parameters)
         total_records = get_total_records(query, params, cursor)
+        # for pagination must have in parameters of method
+        query += " LIMIT %s OFFSET %s"
+        # in parameters of method number by default is a str so must convert back to int
+        limit = int(parameters["limit"])
+        offset = int(parameters["offset"])
+        params.extend([limit, offset])
         # excute the query
         cursor.execute(query, params)
         # this is get method which return data base on parameters so cursor.fetchall is call
@@ -121,12 +127,7 @@ def build_query(parameters):
         order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
         # in thid part must parse as str cannot use binding because sort_column cannot be str
         query += f" ORDER BY d.{parameters["sort_column"]} {order}"
-    # for pagination must have in parameters of method
-    query += " LIMIT %s OFFSET %s"
-    # in parameters of method number by default is a str so must convert back to int
-    limit = int(parameters["limit"])
-    offset = int(parameters["offset"])
-    params.extend([limit, offset])
+    
     # finish prepare query and params
     return query, params
 
