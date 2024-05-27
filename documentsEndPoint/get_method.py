@@ -22,14 +22,13 @@ def get_method(parameters):
         # use cursor.commit()
         results = cursor.fetchall()
         # create a response each row is array of data so response is array of array
-        response = []
         rows = []
         for row in results:
             rows.append(row)
             print(row)
         response = {
             "total_records": total_records,
-            "rows": json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+            "rows": rows
         }
     # hanlding error
     except Error as e:
@@ -61,7 +60,7 @@ def get_method(parameters):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-        'body': response
+        'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
     }
 
 # this is when start to build query
