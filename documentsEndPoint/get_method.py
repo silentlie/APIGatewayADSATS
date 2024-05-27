@@ -1,3 +1,4 @@
+import json
 from mysql.connector import Error
 import mysql.connector
 import os
@@ -60,8 +61,9 @@ def get_method(parameters):
         
         cursor.execute(query, params)
         results = cursor.fetchall()
+        response = []
         for row in results:
-            # need to convert to a list of dict/json
+            response.append(dict(row))
             print(row)
     except Error as e:
         print(f"Error: {e}")
@@ -78,5 +80,5 @@ def get_method(parameters):
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
         # this suppose to return all rows
-        'body': "Succeed"
+        'body': json.dumps(response, indent=4, separators=(',', ':'))
     }
