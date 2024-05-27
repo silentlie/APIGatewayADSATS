@@ -7,7 +7,7 @@ def notice_procedure(body):
             host="localhost",
             user="root",
             password="",
-            database="adsats_database"
+            database="new_adsats_database"
         )
         print("Database connected successfully")
 
@@ -44,8 +44,8 @@ def notice_procedure(body):
 
 # Sample input to the function
 response = notice_procedure({
-    "memberEmail": ["Shima@yahoo.com", "Sahar@yahoo.com"],
-    "aircraftName": ["air1", "air2"],
-    "roleName": ["role1"]
+    "memberEmail": ["amckeran2@instagram.com", "adalgarnowchi@cnbc.com"],
+    "aircraftName": ["AB-CDE", "KP-SDA"],
+    "roleName": ["administrator", "cabin attendants"]
 })
 print('Response:', response)

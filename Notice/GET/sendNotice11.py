@@ -1,6 +1,6 @@
 import mysql.connector
 
-# Endpoint: mynotification/SendNotice
+# Endpoint:notice/SendNotice
 def SendNotice(body):
     connection = None
     cur = None
@@ -10,13 +10,14 @@ def SendNotice(body):
             host="localhost",
             user="root",
             password="",
-            database="adsats_database"
+            database="new_adsats_database"
         )
         
         user = body["user"]
-        roles = body["role"]  # List of roles
-        emails = body["emails"]  # List of emails
-        aircraft_names = body["aircraftNames"]  # List of aircraft names
+        # list of inputs
+        roles = body["role"]  
+        emails = body["emails"]  
+        aircraft_names = body["aircraftNames"]  
         
         cur = connection.cursor()
         
@@ -26,51 +27,67 @@ def SendNotice(body):
         aircraft_names_placeholder = ', '.join(['%s'] * len(aircraft_names))
         
         sql_statement = f"""
-        SELECT DISTINCT email, members_id
+        SELECT DISTINCT email, user_id
         FROM (
             SELECT 
-                m.id AS members_id,
-                r.id AS rolesID,
-                m.email AS email,
+                u.user_id AS user_id,
+                r.role_id AS role_id,
+                u.email AS email,
                 NULL AS aircraft
+                
             FROM 
                 roles AS r
             INNER JOIN 
-                members_has_roles AS mhr ON r.id = mhr.roles_id
+                user_roles AS ur 
+            ON 
+                r.role_id = ur.role_id
+                
             INNER JOIN 
-                members AS m ON m.id = mhr.members_id
+                users AS u 
+            ON 
+                u.user_id = ur.user_id
             WHERE 
                 r.role IN ({roles_placeholder})
+                
             UNION
+            
             SELECT 
-                m.id AS members_id,
-                r.id AS rolesID,
-                m.email AS email,
+                u.user_id AS user_id,
+                r.role_id AS role_id,
+                u.email AS email,
                 NULL AS aircraft
             FROM 
                 roles AS r
             INNER JOIN 
-                members_has_roles AS mhr ON r.id = mhr.roles_id
+                user_roles AS ur 
+            ON 
+                r.role_id = ur.role_id
             INNER JOIN 
-                members AS m ON m.id = mhr.members_id
+                users AS u ON u.user_id = ur.user_id
             WHERE 
-                m.email IN ({emails_placeholder})
-            UNION 
+                u.email IN ({emails_placeholder})
+                
+            UNION
+             
             SELECT
-                m.id AS members_id,
-                NULL AS rolesID,
-                m.email AS email,
+                u.user_id AS user_id,
+                NULL AS role_id,
+                u.email AS email,
                 a.name AS aircraft      
             FROM 
                 aircrafts AS a
             INNER JOIN 
-                aircrafts_has_members AS ahm ON a.id = ahm.aircrafts_id
+                aircraft_crew AS ac
+            ON 
+                a.aircraft_id = ac.aircraft_id    
             INNER JOIN
-                members AS m ON m.id = ahm.members_id
+                users AS u 
+            ON 
+                u.user_id = ac.user_id
             WHERE 
                 a.name IN ({aircraft_names_placeholder})
         ) AS combined_results
-        GROUP BY email, members_id
+        GROUP BY email, user_id
         """
         
         # Combine roles, emails, and aircraft names into parameters list
@@ -100,8 +117,8 @@ def SendNotice(body):
 
 response = SendNotice({
     "user": "user",
-    "role": ["role1", "role2"],
-    "emails": ["Ayhan@yahoo.com", "example@example.com"],
-    "aircraftNames": ["air2", "air3"]
+    "role": ["administrator", "cabin attendants"],
+    "emails": ["amckeran2@instagram.com", "adalgarnowchi@cnbc.com"],
+    "aircraftNames": ["AB-CDE", "KP-SDA"]
 })
 print('Response:', response)
