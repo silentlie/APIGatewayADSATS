@@ -4,7 +4,7 @@ def put_method(body):
         'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
         'body': body
     }

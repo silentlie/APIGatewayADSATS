@@ -2,7 +2,7 @@ from mysql.connector import Error
 import mysql.connector
 import os
 
-def get_method(parameters):
+def patch_method(body):
     try:
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
@@ -11,15 +11,12 @@ def get_method(parameters):
             database= "",
         )
         cursor = connection.cursor()
-        name = parameters.get("name")
-        emails = parameters.get("emails")
-        timeRange = parameters.get("timeRange")
-        archived = parameters.get("archived")
-        aircrafts = parameters.get("aircrafts")
-        columnName = parameters.get("clumnName")
-        asc = parameters.get("asc")
-        query = ""
 
+
+
+
+
+        
         cursor.execute(query)
         if query.strip().upper().startswith("SELECT"):
             results = cursor.fetchall()
@@ -40,7 +37,10 @@ def get_method(parameters):
         'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
         'body': "Succeed"
     }
+def read_file(file_path):
+    with open(file_path, 'r') as file:
+        return file.read()
