@@ -18,7 +18,7 @@ def get_method(parameters):
         total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         cursor = connection.cursor()
         cursor.execute(total_query, params)
-        total_records = cursor.fetchone()
+        total_records = cursor.fetchone()[0] # type: ignore
         cursor = connection.cursor(dictionary=True)
         query += " LIMIT %s OFFSET %s"
         # in parameters of method number by default is a str so must convert back to int
