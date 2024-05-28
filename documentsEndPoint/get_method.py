@@ -10,12 +10,16 @@ def get_method(parameters):
     try:
         # connect_to_db function is separate for easier to read
         connection = connect_to_db()
-        cursor = connection.cursor()
+        
         # build_query function is base on method for example this take parameters
         # the method return query and parameters for binding
         query, params = build_query(parameters)
-        total_records = get_total_records(query, params, cursor)
-        # for pagination must have in parameters of method
+        # get total records first
+        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
+        cursor = connection.cursor()
+        cursor.execute(total_query, params)
+        total_records = cursor.fetchone()
+        cursor = connection.cursor(dictionary=True)
         query += " LIMIT %s OFFSET %s"
         # in parameters of method number by default is a str so must convert back to int
         limit = int(parameters["limit"])
@@ -26,12 +30,7 @@ def get_method(parameters):
         # this is get method which return data base on parameters so cursor.fetchall is call
         # but in some method we only need to know if the query is succeed or not
         # use cursor.commit()
-        results = cursor.fetchall()
-        # create a response each row is array of data so response is array of array
-        rows = []
-        for row in results:
-            rows.append(row)
-            print(row)
+        rows = cursor.fetchall()
         response = {
             "total_records": total_records,
             "rows": rows
@@ -139,12 +138,6 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
-
-def get_total_records(query, params, cursor):
-    total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-    cursor.execute(total_query, params)
-    result = cursor.fetchone()
-    return result[0]
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
