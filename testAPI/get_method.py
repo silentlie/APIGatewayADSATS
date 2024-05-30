@@ -4,7 +4,7 @@ import os
 
 def get_method(body):
     try:
-        query = read_file("test.sql")
+        query = read_file("adsats_database.sql")
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
             user= os.environ.get('USER'),
@@ -32,7 +32,7 @@ def get_method(body):
         'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET'
+                'Access-Control-Allow-Methods': 'OPTIONS,GET'
             },
         'body': "Succed"
     }
