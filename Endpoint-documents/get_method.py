@@ -69,7 +69,7 @@ def build_query(parameters):
     query = """
         SELECT d.document_id, d.file_name, u.email AS email, d.archived, d.created_at
         , s.name AS sub_category, c.name AS category
-        , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
+        , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
         FROM documents AS d
         JOIN staff AS u ON d.author_id = u.staff_id
         JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
@@ -136,7 +136,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "subcategory", "category", "aircrafts"]
+        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "sub_category", "category", "aircrafts"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'

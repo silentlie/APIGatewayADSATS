@@ -63,16 +63,14 @@ def build_query(parameters):
     
     query = """
     SELECT 
-		uu.email,
         n.notice_id,  
         u.email,
         n.category,
         n.subject,
         n.resolved,
         n.archived,
-        n.notice_date,
-        n.created_at AS create_date,
-        n.deadline_at AS deadline
+        n.notice_at,
+        n.deadline_at
     FROM notices AS n
     JOIN notifications AS nf ON nf.notice_id = n.notice_id
    	JOIN users AS u ON u.staff_id = n.author_id
@@ -132,7 +130,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "subcategory", "category", "aircrafts"]
+        valid_columns = ["notice_id", "email", "category", "subject", "resolved", "archived", "notice_at", "deadline_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
