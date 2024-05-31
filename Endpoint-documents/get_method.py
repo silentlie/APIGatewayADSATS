@@ -71,7 +71,7 @@ def build_query(parameters):
         , s.name AS sub_category, c.name AS category
         , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
         FROM documents AS d
-        JOIN users AS u ON d.uploaded_by_id = u.user_id
+        JOIN staff AS u ON d.author_id = u.staff_id
         JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
         JOIN categories AS c ON s.category_id = c.category_id
         LEFT OUTER JOIN aircraft_documents AS ad ON ad.document_id = d.document_id
@@ -86,7 +86,7 @@ def build_query(parameters):
     if 'file_name' in parameters:
         filters.append("file_name LIKE %s")
         params.append(parameters["file_name"])
-    # search for one or many emails/users/authors
+    # search for one or many emails/users/authors/staff
     if 'emails' in parameters:
         emails = parameters["emails"].split(',')
         placeholders = ', '.join(['%s'] * len(emails))
@@ -122,10 +122,10 @@ def build_query(parameters):
             # in this part must parse as str cannot use binding because bool cannot be str
             filters.append(f"archived = {parameters["archived"]}")
     
-    # no filters for users that relate documents
+    # no filters for users/staff that relate documents
     # if they want to reference go to notices
-    # or create many to many table again between documents and users
-    # but it's very complex to filter by users and roles
+    # or create many to many table again between documents and users/staff
+    # but it's very complex to filter by users/staff and roles
     
     # if there is any filter add base query
     if filters:

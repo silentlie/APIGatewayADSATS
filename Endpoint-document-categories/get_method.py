@@ -87,7 +87,7 @@ def build_query(parameters):
         placeholders_category = ', '.join(['%s'] * len(categories))
         filters.append(f"ad.aircraft_id IN ({placeholders_category})")
         params.extend(categories)
-    # search for one or many emails/users/authors
+    # search for one or many emails/users/authors/staff
     if 'subcategory_name' in parameters:
         subcategories = parameters["s.name"].split(',')
         placeholders_sub = ', '.join(['%s'] * len(subcategories))

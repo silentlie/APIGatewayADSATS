@@ -61,20 +61,20 @@ def build_query(parameters):
     # the base query
     query = """
     SELECT 
-        user_id,
+        staff_id,
         email,
         f_name,
         l_name,
         created_at,
         archived
-    FROM users
+    FROM staff
     """
     query += " WHERE deleted_at is Null"
     # define filters if any
     filters = []
     # parameters for binding
     params = []
-   # search for one or many emails/users/authors
+   # search for one or many emails/users/authors/staff
     if 'email' in parameters:
         filters.append("email = %s")
         params.append(parameters["email"])
@@ -99,7 +99,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["user_id", "f_name", "l_name", "email", "archived", "created_at"]
+        valid_columns = ["staff_id", "f_name", "l_name", "email", "archived", "created_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
@@ -131,7 +131,7 @@ class DateTimeEncoder(json.JSONEncoder):
 def get_method_no_parameters():
     try:
         # get all of roles names where it is not archived
-        query = "SELECT email from users"
+        query = "SELECT email from staff"
         connection = connect_to_db()
         cursor = connection.cursor()
         cursor.execute(query)

@@ -72,9 +72,9 @@ def build_query(parameters):
        	JOIN notifications AS nf 
         ON nf.notice_id = n.notice_id
         JOIN users AS u
-        ON u.user_id = n.created_by_id
+        ON u.staff_id = n.author_id
         JOIN users AS uu
-        ON uu.user_id = nf.user_id
+        ON uu.staff_id = nf.staff_id
 		WHERE uu.email = "ccockingd@ask.com"
     """
     query += " WHERE uu.email = %s "
@@ -82,7 +82,7 @@ def build_query(parameters):
     
     filters = []
     params = []    
-    params = [parameters["user_id"]]
+    params = [parameters["email"]]
     
     if 'subject' in parameters:
         filters.append("subject LIKE %s")

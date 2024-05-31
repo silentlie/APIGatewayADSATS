@@ -75,14 +75,14 @@ def build_query(parameters):
         n.deadline_at AS deadline
     FROM notices AS n
     JOIN notifications AS nf ON nf.notice_id = n.notice_id
-   	JOIN users AS u ON u.user_id = n.created_by_id
-    JOIN users AS uu ON uu.user_id = nf.user_id
+   	JOIN users AS u ON u.staff_id = n.author_id
+    JOIN users AS uu ON uu.staff_id = nf.staff_id
     """
     # only return notices that this user is received
     query += " WHERE uu.email = %s"
     query += " AND n.delete_at is Null"
     filters = []
-    params = [parameters["user_id"]]
+    params = [parameters["email"]]
         
     if 'subject' in parameters:
         filters.append("subject LIKE %s")
