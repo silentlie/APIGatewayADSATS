@@ -5,19 +5,20 @@ import mysql.connector
 import os
 
 def get_method(parameters):
-    
     error_message = ""
     cursor = None
-    try:    
+    try:
         connection = connect_to_db()
         query, params = build_query(parameters)
-        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         
+        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         cursor = connection.cursor()
+        print(total_query)
         cursor.execute(total_query, params)
         total_records = cursor.fetchone()[0] # type: ignore
         
         cursor = connection.cursor(dictionary=True)
+        
         query += " LIMIT %s OFFSET %s"
         limit = int(parameters["limit"])
         offset = int(parameters["offset"])
@@ -60,30 +61,29 @@ def get_method(parameters):
             print("MySQL connection is closed")
 
 def build_query(parameters):
-    
     query = """
-    SELECT 
-		uu.email,
-        n.notice_id,  
-        u.email,
-        n.category,
-        n.subject,
-        n.resolved,
-        n.archived,
-        n.notice_date,
-        n.created_at AS create_date,
-        n.deadline_at AS deadline
-    FROM notices AS n
-    JOIN notifications AS nf ON nf.notice_id = n.notice_id
-   	JOIN users AS u ON u.user_id = n.created_by_id
-    JOIN users AS uu ON uu.user_id = nf.user_id
+        SELECT
+        	n.notice_id,
+            n.subject,
+            u.email,
+            nf.status AS status,
+            nf.read_at
+        FROM notices AS n
+       	JOIN notifications AS nf 
+        ON nf.notice_id = n.notice_id
+        JOIN users AS u
+        ON u.user_id = n.created_by_id
+        JOIN users AS uu
+        ON uu.user_id = nf.user_id
+		WHERE uu.email = "ccockingd@ask.com"
     """
-    # only return notices that this user is received
-    query += " WHERE uu.email = %s"
-    query += " AND n.delete_at is Null"
+    query += " WHERE uu.email = %s "
+    query += " AND n.delete_at IS Null"
+    
     filters = []
+    params = []    
     params = [parameters["user_id"]]
-        
+    
     if 'subject' in parameters:
         filters.append("subject LIKE %s")
         params.append(parameters["subject"])
@@ -142,7 +142,7 @@ def build_query(parameters):
     print(query)
     print(params)
     return query, params
-# create a connect to db
+
 def connect_to_db():
     return mysql.connector.connect(
         host=os.environ.get('HOST'),

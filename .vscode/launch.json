@@ -3,6 +3,21 @@
         {
             "type": "aws-sam",
             "request": "direct-invoke",
+            "name": "Endpoint-notifications:lambda_function.lambda_handler (python3.12)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/Endpoint-notifications",
+                "lambdaHandler": "lambda_function.lambda_handler"
+            },
+            "lambda": {
+                "runtime": "python3.12",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
             "name": "Endpoint-notices:lambda_function.lambda_handler (python3.12)",
             "invokeTarget": {
                 "target": "code",

@@ -67,15 +67,15 @@ def get_method(parameters):
 def build_query(parameters):
     # the base query
     query = """
-    SELECT d.document_id, d.file_name, u.email AS email, d.archived, d.created_at
-    , s.name AS sub_category, c.name AS category
-    , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
-    FROM documents AS d
-    JOIN users AS u ON d.uploaded_by_id = u.user_id
-    JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
-    JOIN categories AS c ON s.category_id = c.category_id
-    LEFT OUTER JOIN aircraft_documents AS ad ON ad.document_id = d.document_id
-    LEFT OUTER JOIN aircrafts AS a ON ad.aircraft_id = a.aircraft_id
+        SELECT d.document_id, d.file_name, u.email AS email, d.archived, d.created_at
+        , s.name AS sub_category, c.name AS category
+        , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
+        FROM documents AS d
+        JOIN users AS u ON d.uploaded_by_id = u.user_id
+        JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
+        JOIN categories AS c ON s.category_id = c.category_id
+        LEFT OUTER JOIN aircraft_documents AS ad ON ad.document_id = d.document_id
+        LEFT OUTER JOIN aircrafts AS a ON ad.aircraft_id = a.aircraft_id
     """
     query += " WHERE d.deleted_at IS Null"
     # define filters if any
