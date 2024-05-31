@@ -3,12 +3,16 @@ import json
 from mysql.connector import Error
 import mysql.connector
 import os
+# I've refactor the code so it look a little different
 def get_method(parameters):
-    if not parameters:
-        return get_method_no_parameters()
     try:
+        # connect_to_db function is separate for easier to read
         connection = connect_to_db()
+        
+        # build_query function is base on method for example this take parameters
+        # the method return query and parameters for binding
         query, params = build_query(parameters)
+        # get total records first
         total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         cursor = connection.cursor()
         cursor.execute(total_query, params)
@@ -59,27 +63,57 @@ def get_method(parameters):
             connection.close()
             print("MySQL connection is closed")
 
+# this is when start to build query
 def build_query(parameters):
     # the base query
     query = """
-    SELECT 
-        aircraft_id, 
-        name, 
-        archived, 
-        created_at,
-        deleted_at
-    FROM aircrafts
+    SELECT d.document_id, d.file_name, u.email AS email, d.archived, d.created_at
+    , s.name AS sub_category, c.name AS category
+    , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
+    FROM documents AS d
+    JOIN users AS u ON d.uploaded_by_id = u.user_id
+    JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
+    JOIN categories AS c ON s.category_id = c.category_id
+    LEFT OUTER JOIN aircraft_documents AS ad ON ad.document_id = d.document_id
+    LEFT OUTER JOIN aircrafts AS a ON ad.aircraft_id = a.aircraft_id
     """
-    query += " WHERE deleted_at is Null"
+    query += " WHERE d.deleted_at IS Null"
     # define filters if any
     filters = []
     # parameters for binding
     params = []
-    # search for name of aircraft
-    if 'name' in parameters:
-        filters.append("name LIKE %s")
-        params.append(parameters["name"]) 
-    # filter based on archived or not
+    # search file name in parameters of method should be "%aircraft%"
+    if 'file_name' in parameters:
+        filters.append("file_name LIKE %s")
+        params.append(parameters["file_name"])
+    # search for one or many emails/users/authors
+    if 'emails' in parameters:
+        emails = parameters["emails"].split(',')
+        placeholders = ', '.join(['%s'] * len(emails))
+        filters.append(f"email IN ({placeholders})")
+        params.extend(emails)
+    if 'sub_categories' in parameters:
+        sub_categories = parameters["sub_categories"].split(',')
+        placeholders = ', '.join(['%s'] * len(sub_categories))
+        filters.append(f"sub_category IN ({placeholders})")
+        params.extend(sub_categories)
+    if 'categories' in parameters:
+        categories = parameters["categories"].split(',')
+        placeholders = ', '.join(['%s'] * len(categories))
+        filters.append(f"category IN ({placeholders})")
+        params.extend(categories)
+    # search for one or many aircrafts that relate to document
+    if 'aircrafts' in parameters:
+        aircrafts = parameters["aircrafts"].split(',')
+        placeholders = ', '.join(['%s'] * len(aircrafts))
+        filters.append(f"aircraft IN ({placeholders})")
+        params.extend(aircrafts)
+    # start date and end date of create_at
+    if 'create_at' in parameters:
+        create_at = parameters["create_at"].split(',')
+        filters.append("d.created_at BETWEEN %s AND %s")
+        params.extend(create_at)
+    # archived or not
     if 'archived' in parameters:
         # Ensure archived is a valid value to prevent SQL injection
         # Add other valid value if necessar
@@ -87,35 +121,34 @@ def build_query(parameters):
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
             filters.append(f"archived = {parameters["archived"]}")
-    # filter based on date range
-    if 'created_at' in parameters:
-        created_at = parameters["start_at"].split(',')
-        filters.append("start_at BETWEEN %s AND %s")
-        params.extend(created_at)
-    # filter based on date range
-    if 'deleted_at' in parameters:
-        deleted_at = parameters["deleted_at"].split(',')
-        filters.append("deleted_at BETWEEN %s AND %s")
-        params.extend(deleted_at)
+    
+    # no filters for users that relate documents
+    # if they want to reference go to notices
+    # or create many to many table again between documents and users
+    # but it's very complex to filter by users and roles
+    
     # if there is any filter add base query
     if filters:
         query += " AND " + " AND ".join(filters)
-    # if sorting is required
+    # must have because GROUP_CONCAT
+    query += " GROUP BY d.document_id "
+    # if doesnt provide a sort column default is pk of documents
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["name", "aircraft_id", "archived", "start_at", "end_at"]
+        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "subcategory", "category", "aircrafts"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
-            order = 'ASC' if parameters.get("asc", 'true') == 'true' else 'DESC'
+            order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
             # in this part must parse as str cannot use binding because sort_column cannot be str
-            query += f" ORDER BY {parameters['sort_column']} {order}"
+            query += f" ORDER BY {parameters["sort_column"]} {order}"
+    
     # finish prepare query and params
     print(query)
     print(params)
     return query, params
 
-# Create a connection to the DB
+# create a connect to db
 def connect_to_db():
     return mysql.connector.connect(
         host=os.environ.get('HOST'),
@@ -123,41 +156,9 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
-# for dump json format
+
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
-# return a list string for filtering, searching, sending
-def get_method_no_parameters():
-    try:
-        # get all of aircrafts names where it is not archived
-        query = "SELECT name FROM aircrafts WHERE archived = false"
-        connection = connect_to_db()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall() 
-        names = [item[0] for item in response] # type: ignore
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(names, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-
-# ===========================================================================
