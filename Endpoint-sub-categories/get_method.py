@@ -59,23 +59,22 @@ def build_query(parameters):
     # the base query
     query = """
     SELECT 
-        subcategory_id,
-        name,
-        description,
-        archived,
-        c.name AS category,
-
+        s.subcategory_id,
+        s.name,
+        s.description,
+        s.archived,
+        c.name AS category
     FROM `subcategories` AS s
     JOIN categories AS c
     ON c.category_id = s.category_id
-    WHERE deleted_at IS Null
+    WHERE s.deleted_at IS Null
     """
     
     filters = []
     params = []
     # search for name of category
     if 'name' in parameters:
-        filters.append("name LIKE %s")
+        filters.append("s.name LIKE %s")
         params.append(parameters["name"])
     
     # filter based on archived or not
@@ -85,7 +84,7 @@ def build_query(parameters):
         valid_value = ["true", "false"]
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
+            filters.append(f"s.archived = {parameters["archived"]}")
     
     # if there is any filter add base query
     if filters:
