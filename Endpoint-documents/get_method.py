@@ -67,7 +67,7 @@ def get_method(parameters):
 def build_query(parameters):
     # the base query
     query = """
-        SELECT d.document_id, d.file_name, u.email AS email, d.archived, d.created_at
+        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at
         , s.name AS sub_category, c.name AS category
         , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
         FROM documents AS d
@@ -83,30 +83,30 @@ def build_query(parameters):
     # parameters for binding
     params = []
     # search file name in parameters of method should be "%aircraft%"
-    if 'file_name' in parameters:
+    if 'search' in parameters:
         filters.append("file_name LIKE %s")
-        params.append(parameters["file_name"])
+        params.append(parameters["search"])
     # search for one or many emails/users/authors/staff
-    if 'emails' in parameters:
-        emails = parameters["emails"].split(',')
+    if 'authors' in parameters:
+        emails = parameters["authors"].split(',')
         placeholders = ', '.join(['%s'] * len(emails))
-        filters.append(f"email IN ({placeholders})")
+        filters.append(f"u.email IN ({placeholders})")
         params.extend(emails)
-    if 'sub_categories' in parameters:
-        sub_categories = parameters["sub_categories"].split(',')
+    if 'sub-categories' in parameters:
+        sub_categories = parameters["sub-categories"].split(',')
         placeholders = ', '.join(['%s'] * len(sub_categories))
-        filters.append(f"sub_category IN ({placeholders})")
+        filters.append(f"s.name IN ({placeholders})")
         params.extend(sub_categories)
     if 'categories' in parameters:
         categories = parameters["categories"].split(',')
         placeholders = ', '.join(['%s'] * len(categories))
-        filters.append(f"category IN ({placeholders})")
+        filters.append(f"c.name IN ({placeholders})")
         params.extend(categories)
     # search for one or many aircrafts that relate to document
     if 'aircrafts' in parameters:
         aircrafts = parameters["aircrafts"].split(',')
         placeholders = ', '.join(['%s'] * len(aircrafts))
-        filters.append(f"aircraft IN ({placeholders})")
+        filters.append(f"a.name IN ({placeholders})")
         params.extend(aircrafts)
     # start date and end date of create_at
     if 'create_at' in parameters:
@@ -120,7 +120,7 @@ def build_query(parameters):
         valid_value = ["true", "false"]
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
+            filters.append(f"d.archived = {parameters["archived"]}")
     
     # no filters for users/staff that relate documents
     # if they want to reference go to notices

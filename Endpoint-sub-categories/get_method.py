@@ -66,7 +66,6 @@ def build_query(parameters):
         c.name AS category
     FROM `subcategories` AS s
     JOIN categories AS c
-    ON c.category_id = s.category_id
     WHERE s.deleted_at IS Null
     """
     

@@ -6,8 +6,6 @@ import os
 
 def get_method(parameters):
     
-    error_message = ""
-    cursor = None
     try:    
         connection = connect_to_db()
         query, params = build_query(parameters)
@@ -63,8 +61,8 @@ def build_query(parameters):
     
     query = """
     SELECT 
-        n.notice_id,  
-        u.email,
+        n.notice_id,
+        u.email AS author,
         n.category,
         n.subject,
         n.resolved,
@@ -73,12 +71,12 @@ def build_query(parameters):
         n.deadline_at
     FROM notices AS n
     JOIN notifications AS nf ON nf.notice_id = n.notice_id
-   	JOIN users AS u ON u.staff_id = n.author_id
-    JOIN users AS uu ON uu.staff_id = nf.staff_id
+   	JOIN staff AS u ON u.staff_id = n.author_id
+    JOIN staff AS uu ON uu.staff_id = nf.staff_id
     """
     # only return notices that this user is received
     query += " WHERE uu.email = %s"
-    query += " AND n.delete_at is Null"
+    query += " AND n.deleted_at is Null"
     filters = []
     params = [parameters["email"]]
         
@@ -92,8 +90,8 @@ def build_query(parameters):
         filters.append(f"category IN ({placeholders})")
         params.extend(categories)
     
-    if 'emails' in parameters:
-        emails = parameters["emails"].split(',')
+    if 'authors' in parameters:
+        emails = parameters["authors"].split(',')
         placeholders = ', '.join(['%s'] * len(emails))
         filters.append(f"u.email IN ({placeholders})")
         params.extend(emails)
