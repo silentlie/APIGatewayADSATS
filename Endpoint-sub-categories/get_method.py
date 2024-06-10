@@ -7,6 +7,7 @@ import os
 def get_method(parameters):
     if not parameters:
         return get_method_no_parameters()
+    
     try:
        
         connection = connect_to_db()
@@ -128,6 +129,7 @@ def get_method_no_parameters():
         # get all of subcategories names where it is not archived
         query = "SELECT name from subcategories"
         query += " WHERE archived = false"
+        query += " WHERE deleted_at IS Null"
         connection = connect_to_db()
         cursor = connection.cursor()
         cursor.execute(query)

@@ -1,8 +1,7 @@
 from mysql.connector import Error
 import mysql.connector
 import os
-
-def delete_method(body):
+def patch_method(body):
     try:
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
@@ -11,12 +10,15 @@ def delete_method(body):
             database= "adsats_database",
         )
         cursor = connection.cursor()
+
+
+        
         name = body.get("name", default=None)
         emails = body.get("emails", default=None).split(',')
         timeRange = body.get("timeRange", default=None).split(',')
         archived = body.get("archived", default=None)
         aircrafts = body.get("aircrafts", default=None).split(',')
-        columnName = body.get("clumnName", default=None)
+        columnName = body.get("columnName", default=None)
         asc = body.get("asc", default=None)
         limit = body.get("limit")
         offset = body.get("offset")

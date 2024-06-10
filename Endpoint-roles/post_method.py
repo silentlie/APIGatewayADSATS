@@ -15,6 +15,21 @@ def post_method(body):
             database="adsats_database",
         )
         cursor = connection.cursor()
+        role = body["role"]
+        check_query = "SELECT COUNT(*) FROM roles WHERE role = %s"
+        cursor.execute(check_query, (role,))
+        result = cursor.fetchone()
+
+        if result[0] > 0: # type: ignore
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+                'body': json.dumps(f"Role with name '{role}' already exists.")
+            }
         role_id = insert_and_get_role_id(cursor, body)
         connection.commit()
 

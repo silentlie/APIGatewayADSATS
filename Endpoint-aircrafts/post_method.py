@@ -49,7 +49,7 @@ def post_method(body):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-            'body': json.dumps("Succeed")
+            'body': json.dumps(aircraft_id)
         }
 
     except Error as e:

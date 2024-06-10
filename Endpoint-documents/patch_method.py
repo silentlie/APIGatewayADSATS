@@ -14,12 +14,7 @@ def patch_method(body):
             database="adsats_database"
         )
         cursor = connection.cursor()
-        print(body)
         document_id = body['document_id']
-        if isinstance(document_id, int):
-            print(True)
-        else:
-            print(False)
         if 'archived' in body:
             update_archived_value(cursor, document_id, body['archived'])
             connection.commit()

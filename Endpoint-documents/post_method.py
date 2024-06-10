@@ -77,8 +77,8 @@ def insert_and_get_document_id(cursor, body):
 
     query = """
         INSERT INTO documents 
-            (author_id, subcategory_id, file_name, archived, created_at, deleted_at)
-        VALUES (%s, %s, %s, %s, %s, NULL)
+            (author_id, subcategory_id, file_name, archived, created_at)
+        VALUES (%s, %s, %s, %s, %s)
     """
     params = [author_id, sub_category_id, file_name, archived, created_at]
     cursor.execute(query, params)

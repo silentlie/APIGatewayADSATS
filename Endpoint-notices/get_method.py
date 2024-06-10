@@ -77,11 +77,10 @@ def build_query(parameters):
     filters = []
     params = []
 
-    if 'email' in parameters:
+    if 'staff_id' in parameters:
         query += " JOIN notifications AS nf ON nf.notice_id = n.notice_id "
-        query += " JOIN staff AS uu ON uu.staff_id = nf.staff_id "
-        filters.append(" uu.email = %s")
-        params.append(parameters["email"])
+        filters.append(" nf.staff_id = %s")
+        params.append(parameters["staff_id"])
         
     if 'search' in parameters:
         filters.append("subject LIKE %s")
@@ -131,7 +130,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["email", "category", "subject", "resolved", "archived", "notice_at", "deadline_at"]
+        valid_columns = ["notice_id", "email", "category", "subject", "resolved", "archived", "notice_at", "deadline_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'

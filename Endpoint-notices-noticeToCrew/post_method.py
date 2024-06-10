@@ -1,8 +1,13 @@
+import datetime
 import json
 from mysql.connector import Error
 import mysql.connector
 import os
-from datetime import datetime
+
+# Endpoint > /notices/notice-to-crew
+# This will create a new notice record
+# Then will create a new notice_details record
+
 def post_method(body):
     try:
         connection = mysql.connector.connect(
@@ -12,25 +17,10 @@ def post_method(body):
             database= "adsats_database",
         )
         cursor = connection.cursor()
-        check_query = "SELECT COUNT(*) FROM staff WHERE email = %s"
-        email = body["email"]
-        cursor.execute(check_query, (email,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"staff with email '{email}' already exists.")
-            }
         staff_id = insert_and_get_staff_id(cursor, body)
         connection.commit()
 
-        if 'aircrafts' in body:
+        if 'emails' in body:
             aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircrafts'])
             insert_staff_aircrafts(cursor, staff_id, aircraft_ids)
             connection.commit()
@@ -38,11 +28,6 @@ def post_method(body):
         if 'roles' in body:
             role_ids = get_role_ids_by_names(cursor, body['roles'])
             insert_staff_roles(cursor, staff_id, role_ids)
-            connection.commit()
-
-        if 'categories' in body:
-            category_ids = get_category_ids_by_names(cursor, body['categories'])
-            insert_permissions(cursor, staff_id, category_ids)
             connection.commit()
 
         return {
@@ -84,6 +69,7 @@ def insert_and_get_staff_id(cursor, body):
     email = body["email"]
     # required
     archived = body["archived"]
+    # TODO:need to check if email is exist
 
     query = """
     INSERT INTO staff (f_name, l_name, email, archived, created_at, deleted_at) VALUES (%s, %s, %s, %s, %s, Null)
@@ -111,27 +97,15 @@ def get_aircraft_ids_by_names(cursor, aircrafts):
     results = cursor.fetchall()
     return [row[0] for row in results]
 
-def get_category_ids_by_names(cursor, categories):
-    format_strings = ','.join(['%s'] * len(categories))
-    query = f"SELECT category_id FROM categories WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(categories))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
-
 def insert_staff_roles(cursor, staff_id, role_ids):
     query = "INSERT INTO staff_roles VALUES (%s, %s)"
     for role_id in role_ids:
         cursor.execute(query, (staff_id, role_id))
 
 def insert_staff_aircrafts(cursor, staff_id, aircraft_ids):
-    query = "INSERT INTO aircraft_staff VALUES (%s, %s)"
+    query = "INSERT INTO aircraft_crew VALUES (%s, %s)"
     for aircraft_id in aircraft_ids:
         cursor.execute(query, (aircraft_id, staff_id))
-
-def insert_permissions(cursor, staff_id, category_ids):
-    query = "INSERT INTO aircraft_staff VALUES (%s, %s)"
-    for category_id in category_ids:
-        cursor.execute(query, (category_id, staff_id))
 
 # for dump json format
 class DateTimeEncoder(json.JSONEncoder):

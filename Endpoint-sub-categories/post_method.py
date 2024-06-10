@@ -15,6 +15,21 @@ def post_method(body):
             database="adsats_database",
         )
         cursor = connection.cursor()
+        subcategory_name = body["subcategory_name"]
+        check_query = "SELECT COUNT(*) FROM subcategories WHERE subcategory_name = %s"
+        cursor.execute(check_query, (subcategory_name,))
+        result = cursor.fetchone()
+
+        if result[0] > 0: # type: ignore
+            return {
+                'statusCode': 400,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+                'body': json.dumps(f"subcategory with name '{subcategory_name}' already exists.")
+            }
         subcategory_id = insert_and_get_subcategory_id(cursor, body)
         connection.commit()
 
@@ -25,7 +40,7 @@ def post_method(body):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-            'body': json.dumps({"subcategory_id": subcategory_id}, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+            'body': json.dumps(subcategory_id, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
   
     except Error as e:
@@ -51,15 +66,14 @@ def insert_and_get_subcategory_id(cursor, body):
     category_name = body["category_name"]
     subcategory_name = body["subcategory_name"]
     description = body["description"]
-    archived = body["archived"]
-   
+    
     category_id = get_category_id(cursor, category_name)
         
     query = """
     INSERT INTO subcategories (category_id, name, description, archived)
     VALUES (%s, %s, %s, %s)
     """
-    params = [category_id, subcategory_name, description, archived]
+    params = [category_id, subcategory_name, description, False]
     cursor.execute(query, params)
     
     query = "SELECT subcategory_id FROM subcategories WHERE name = %s"

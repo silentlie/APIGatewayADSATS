@@ -3,21 +3,22 @@ from post_method import post_method
 from get_method import get_method
 from put_method import put_method
 from patch_method import patch_method
+from delete_method import delete_method
 
 def lambda_handler(event, context):
     method = event.get("httpMethod")
-    body_str = event.get("body")
+    bodyStr = event.get("body")
     parameters = event.get("queryStringParameters")
     
     print(f"Method: {method}")
-    print(f"Body: {body_str}")
+    print(f"Body: {bodyStr}")
     print(f"Parameters: {parameters}")
     
     body = {}
-    if isinstance(body_str, str):
-        body = json.loads(body_str)
+    if isinstance(bodyStr, str):
+        body = json.loads(bodyStr)
     else:
-        body = body_str
+        body = bodyStr
     
     if method == "GET":
         return get_method(parameters)
@@ -27,6 +28,8 @@ def lambda_handler(event, context):
         return post_method(body)
     if method == "PATCH":
         return patch_method(body)
+    if method == "DELETE":
+        return delete_method(body)
     else:
         return {
             'statusCode': 405,
@@ -37,4 +40,3 @@ def lambda_handler(event, context):
             },
             'body': json.dumps("Method not allowed")
         }
-
