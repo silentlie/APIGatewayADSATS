@@ -83,5 +83,3 @@ def update_archived_value(cursor, role_id, archived):
     params = [archived, role_id]
     cursor.execute(query, params)
     print(f"Updated archived status to {archived} for role ID: {role_id}")
-
-

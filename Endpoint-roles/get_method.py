@@ -134,6 +134,7 @@ def get_method_no_parameters():
         # get all of roles names where it is not archived
         query = "SELECT role from roles"
         query += " WHERE archived = false"
+        query += " WHERE deleted_at IS null"
         connection = connect_to_db()
         cursor = connection.cursor()
         cursor.execute(query)
