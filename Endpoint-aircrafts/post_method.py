@@ -75,10 +75,10 @@ def insert_and_get_aircraft_id(cursor, body):
     created_at = datetime.now()
 
     query = """
-    INSERT INTO aircrafts (name, archived, created_at, deleted_at)
-    VALUES (%s, %s, %s, %s)
+    INSERT INTO aircrafts (name, archived, created_at)
+    VALUES (%s, %s, %s)
     """
-    params = [aircraft_name, archived, created_at, None]
+    params = [aircraft_name, archived, created_at]
     cursor.execute(query, params)
     
     query = "SELECT aircraft_id FROM aircrafts WHERE name = %s"

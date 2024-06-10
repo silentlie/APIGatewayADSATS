@@ -4,6 +4,8 @@ from mysql.connector import Error
 import mysql.connector
 import os
 def get_method(parameters):
+    if not parameters:
+        return get_method_no_parameters()
     try:
         connection = connect_to_db()
         query, params = build_query(parameters)
@@ -122,5 +124,35 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+# return a list string for filtering, searching, sending
+def get_method_no_parameters():
+    try:
+        # get all of aircrafts names where it is not archived
+        query = "SELECT name FROM aircrafts WHERE archived = false and deleted_at IS Null"
+        connection = connect_to_db()
+        cursor = connection.cursor()
+        cursor.execute(query)
+        response = cursor.fetchall() 
+        names = [item[0] for item in response] # type: ignore
+        return {
+            'statusCode': 200,
+            'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+            'body': json.dumps(names, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+        }
+    except Error as e:
+        print(f"Error: {e._full_msg}")
+        return {
+            'statusCode': 200,
+            'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+            'body': json.dumps(e._full_msg)
+        }
 
 # ===========================================================================
