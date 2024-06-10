@@ -71,12 +71,12 @@ def insert_and_get_role_id(cursor, body):
     role = body["role"]
     description = body["description"]
     archived = body["archived"]
-
+    created_at = body["created_at"]
     query = """
     INSERT INTO roles (role, description, archived, created_at)
     VALUES (%s, %s, %s, %s)
     """
-    params = [role, description, archived, datetime.now()]
+    params = [role, description, archived, created_at]
     cursor.execute(query, params)
 
     cursor.execute("SELECT LAST_INSERT_ID()")

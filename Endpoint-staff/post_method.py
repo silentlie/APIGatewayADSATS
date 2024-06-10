@@ -27,9 +27,10 @@ def post_method(body):
                 },
                 'body': json.dumps(f"staff with email '{email}' already exists.")
             }
+        print("finish check_query")
         staff_id = insert_and_get_staff_id(cursor, body)
         connection.commit()
-
+        print("finish staff_id")
         if 'aircrafts' in body:
             aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircrafts'])
             insert_staff_aircrafts(cursor, staff_id, aircraft_ids)
@@ -129,7 +130,7 @@ def insert_staff_aircrafts(cursor, staff_id, aircraft_ids):
         cursor.execute(query, (aircraft_id, staff_id))
 
 def insert_permissions(cursor, staff_id, category_ids):
-    query = "INSERT INTO aircraft_staff VALUES (%s, %s)"
+    query = "INSERT INTO permissions VALUES (Null, %s, %s)"
     for category_id in category_ids:
         cursor.execute(query, (category_id, staff_id))
 

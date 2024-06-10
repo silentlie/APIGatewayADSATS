@@ -171,8 +171,9 @@ def get_specific_staff(cursor, parameters):
         s.f_name,
         s.l_name,
         GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircrafts,
-        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles
-        GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories
+        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
+        GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories,
+        GROUP_CONCAT(DISTINCT sc.name SEPARATOR ', ') AS subcategories
     FROM staff AS s
     JOIN aircraft_staff AS au
     ON au.staff_id = s.staff_id
@@ -182,11 +183,14 @@ def get_specific_staff(cursor, parameters):
     ON rs.staff_id = s.staff_id
     JOIN roles AS r
     ON rs.role_id = r.role_id
-    JOIN permissions AS p
+    LEFT JOIN permissions AS p
     ON p.staff_id = s.staff_id
-    JOIN categories AS c
+    LEFT JOIN categories AS c
     ON c.category_id = p.category_id
-    WHERE email = %s AND deleted_at IS Null
+    LEFT JOIN subcategories AS sc
+    ON sc.category_id = c.category_id
+    WHERE email = %s AND s.deleted_at IS Null
+    GROUP BY s.staff_id
     """
     params= [parameters["email"]]
     cursor.execute(query, params)

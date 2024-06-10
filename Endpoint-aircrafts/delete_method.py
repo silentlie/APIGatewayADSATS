@@ -30,11 +30,24 @@ def delete_method(body):
 
         cursor.execute(update_query, (datetime.datetime.now(), aircraft_id))
         connection.commit()
-
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(aircraft_id)
+        }
     except Error as e:
         print(f"Error: {e}")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
             'body': json.dumps("Internal server error")
         }
     finally:
@@ -44,14 +57,6 @@ def delete_method(body):
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps("Succeeded")
-    }
+    
 
 

@@ -62,7 +62,8 @@ def build_query(parameters):
     query = """
     SELECT 
         n.notice_id,
-        u.email AS author,
+        s.email AS author,
+        GROUP_CONCAT(r.role SEPARATOR ', ') AS roles,
         n.category,
         n.subject,
         n.resolved,
@@ -70,7 +71,12 @@ def build_query(parameters):
         n.notice_at,
         n.deadline_at
     FROM notices AS n
-   	JOIN staff AS u ON u.staff_id = n.author_id
+   	JOIN staff AS s 
+    ON s.staff_id = n.author_id
+    JOIN staff_roles AS sr
+    ON s.staff_id = sr.staff_id
+    JOIN roles AS r
+    ON r.role_id = sr.role_id
     """
     # only return notices that this user is received
     query += " WHERE n.deleted_at is Null"
@@ -92,10 +98,16 @@ def build_query(parameters):
         filters.append(f"category IN ({placeholders})")
         params.extend(categories)
     
+    if 'roles' in parameters:
+        roles = parameters["roles"].split(',')
+        placeholders = ', '.join(['%s'] * len(roles))
+        filters.append(f"r.role IN ({placeholders})")
+        params.extend(roles)
+    
     if 'authors' in parameters:
         emails = parameters["authors"].split(',')
         placeholders = ', '.join(['%s'] * len(emails))
-        filters.append(f"u.email IN ({placeholders})")
+        filters.append(f"s.email IN ({placeholders})")
         params.extend(emails)
         
     if 'archived' in parameters:
@@ -127,6 +139,8 @@ def build_query(parameters):
     if filters:
         query += " AND " + " AND ".join(filters)
     
+    query += " GROUP BY n.notice_id"
+
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary

@@ -25,11 +25,24 @@ def patch_method(body):
         if 'name' in body:
             update_aircraft(cursor, body, aircraft_id)
             connection.commit()
-
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(aircraft_id)
+        }
     except Error as e:
         print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
             'body': json.dumps({"error": str(e)})
         }
     finally:
@@ -39,15 +52,7 @@ def patch_method(body):
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps("Succeeded")
-    }
+    
 
 def update_aircraft(cursor, body, aircraft_id):
     aircraft = body.get("name", "")
@@ -65,7 +70,7 @@ def update_archived_value(cursor, aircraft_id, archived):
     query = """
         UPDATE aircrafts 
         SET archived = %s
-        WHERE aircraft_id = % s
+        WHERE aircraft_id = %s
     """
     params = [archived, aircraft_id] 
     cursor.execute(query, params)

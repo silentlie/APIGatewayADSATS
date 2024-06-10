@@ -11,7 +11,9 @@ def get_method(parameters):
         
         # build_query function is base on method for example this take parameters
         # the method return query and parameters for binding
-        query, params = build_query(parameters)
+        # nested query with limit based on staff
+        nested_query, params = limit_query(parameters)
+        query, params = build_query(nested_query, params, parameters)
         # get total records first
         total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         cursor = connection.cursor()
@@ -64,54 +66,49 @@ def get_method(parameters):
             print("MySQL connection is closed")
 
 # this is when start to build query
-def build_query(parameters):
+def build_query(nested_query, params, parameters):
     # the base query
-    query = """
-        SELECT d.document_id, d.file_name, u.email AS author, d.archived, d.created_at
-        , s.name AS sub_category, c.name AS category
-        , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
-        FROM documents AS d
-        JOIN staff AS u ON d.author_id = u.staff_id
-        JOIN subcategories AS s ON s.subcategory_id = d.subcategory_id
-        JOIN categories AS c ON s.category_id = c.category_id
-        LEFT OUTER JOIN aircraft_documents AS ad ON ad.document_id = d.document_id
-        LEFT OUTER JOIN aircrafts AS a ON ad.aircraft_id = a.aircraft_id
+    query = f"""
+        SELECT *
+        FROM ({nested_query}) AS subquery
     """
-    query += " WHERE d.deleted_at IS Null"
     # define filters if any
     filters = []
-    # parameters for binding
-    params = []
     # search file name in parameters of method should be "%aircraft%"
     if 'search' in parameters:
         filters.append("file_name LIKE %s")
         params.append(parameters["search"])
     # search for one or many emails/users/authors/staff
     if 'authors' in parameters:
-        emails = parameters["authors"].split(',')
-        placeholders = ', '.join(['%s'] * len(emails))
-        filters.append(f"u.email IN ({placeholders})")
-        params.extend(emails)
-    if 'sub-categories' in parameters:
-        sub_categories = parameters["sub-categories"].split(',')
+        authors = parameters["authors"].split(',')
+        placeholders = ', '.join(['%s'] * len(authors))
+        filters.append(f"author IN ({placeholders})")
+        params.extend(authors)
+    if 'roles' in parameters:
+        roles = parameters["roles"].split(',')
+        placeholders = " OR ".join(["FIND_IN_SET(%s, roles) > 0"] * len(roles))
+        filters.append(f"({placeholders})")
+        params.extend(roles)
+    if 'subcategories' in parameters:
+        sub_categories = parameters["subcategories"].split(',')
         placeholders = ', '.join(['%s'] * len(sub_categories))
-        filters.append(f"s.name IN ({placeholders})")
+        filters.append(f"subcategory IN ({placeholders})")
         params.extend(sub_categories)
     if 'categories' in parameters:
         categories = parameters["categories"].split(',')
         placeholders = ', '.join(['%s'] * len(categories))
-        filters.append(f"c.name IN ({placeholders})")
+        filters.append(f"category IN ({placeholders})")
         params.extend(categories)
     # search for one or many aircrafts that relate to document
     if 'aircrafts' in parameters:
         aircrafts = parameters["aircrafts"].split(',')
-        placeholders = ', '.join(['%s'] * len(aircrafts))
-        filters.append(f"a.name IN ({placeholders})")
+        placeholders = " OR ".join(["FIND_IN_SET(%s, aircrafts) > 0"] * len(aircrafts))
+        filters.append(f"({placeholders})")
         params.extend(aircrafts)
     # start date and end date of create_at
     if 'create_at' in parameters:
         create_at = parameters["create_at"].split(',')
-        filters.append("d.created_at BETWEEN %s AND %s")
+        filters.append("created_at BETWEEN %s AND %s")
         params.extend(create_at)
     # archived or not
     if 'archived' in parameters:
@@ -120,7 +117,7 @@ def build_query(parameters):
         valid_value = ["true", "false"]
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"d.archived = {parameters["archived"]}")
+            filters.append(f"archived = {parameters["archived"]}")
     
     # no filters for users/staff that relate documents
     # if they want to reference go to notices
@@ -129,9 +126,9 @@ def build_query(parameters):
     
     # if there is any filter add base query
     if filters:
-        query += " AND " + " AND ".join(filters)
+        query += " WHERE " + " AND ".join(filters)
     # must have because GROUP_CONCAT
-    query += " GROUP BY d.document_id "
+    query += " GROUP BY document_id "
     # if doesnt provide a sort column default is pk of documents
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
@@ -147,6 +144,72 @@ def build_query(parameters):
     print(query)
     print(params)
     return query, params
+
+def limit_query(parameters):
+    nested_query = """
+        SELECT 
+        d.document_id, 
+        d.file_name, 
+        s.email AS author, 
+        GROUP_CONCAT(r.role SEPARATOR ', ') AS roles,
+        d.archived, 
+        d.created_at, 
+        sc.name AS subcategory, 
+        c.name AS category,
+        GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
+        FROM documents AS d
+        JOIN staff AS s 
+        ON d.author_id = s.staff_id
+        JOIN staff_roles AS sr
+        ON s.staff_id = sr.staff_id
+        JOIN roles AS r
+        ON r.role_id = sr.role_id
+        JOIN subcategories AS sc 
+        ON sc.subcategory_id = d.subcategory_id
+        JOIN categories AS c 
+        ON sc.category_id = c.category_id
+        LEFT OUTER JOIN aircraft_documents AS ad 
+        ON ad.document_id = d.document_id
+        LEFT OUTER JOIN aircrafts AS a 
+        ON ad.aircraft_id = a.aircraft_id
+        WHERE d.deleted_at IS Null
+        
+    """
+    # Define limit if any
+    limits = []
+    params = []
+    # Author limit
+    if 'limit_author' in parameters:
+        limits.append("s.email = %s")
+        params.append(parameters["limit_author"])
+    if 'limit_roles' in parameters:
+        roles = parameters["limit_roles"].split(',')
+        placeholders = ', '.join(['%s'] * len(roles))
+        limits.append(f"r.role IN ({placeholders})")
+        params.extend(roles)
+    # Aircrafts limit
+    if 'limit_aircrafts' in parameters:
+        aircrafts = parameters["limit_aircrafts"].split(',')
+        placeholders = ', '.join(['%s'] * len(aircrafts))
+        limits.append(f"a.name IN ({placeholders})")
+        params.extend(aircrafts)
+    # Sub-categories limit
+    if 'limit_subcategories' in parameters:
+        sub_categories = parameters["limit_subcategories"].split(',')
+        placeholders = ', '.join(['%s'] * len(sub_categories))
+        limits.append(f"sc.name IN ({placeholders})")
+        params.extend(sub_categories)
+    # Categories limit  
+    if 'limit_categories' in parameters:
+        sub_categories = parameters["limit_categories"].split(',')
+        placeholders = ', '.join(['%s'] * len(sub_categories))
+        limits.append(f"c.name IN ({placeholders})")
+        params.extend(sub_categories)
+
+    if limits:
+        nested_query += " AND ( " + " OR ".join(limits) + " ) "
+    nested_query += " GROUP BY d.document_id "
+    return nested_query, params
 
 # create a connect to db
 def connect_to_db():

@@ -68,7 +68,7 @@ def build_query(parameters):
         role_id,
         role,
         archived,
-        description
+        description,
         created_at
     FROM roles
     """

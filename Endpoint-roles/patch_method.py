@@ -24,11 +24,24 @@ def patch_method(body):
         if 'description' in body or 'role' in body:
             update_role(cursor, body, role_id)
             connection.commit()
-
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(role_id)
+        }
     except Error as e:
         print(f"Error: {str(e)}")
         return {
             'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
             'body': json.dumps({"error": str(e)})
         }
     finally:
@@ -38,15 +51,7 @@ def patch_method(body):
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps("Succeeded")
-    }
+    
 
 def update_role(cursor, body, role_id):
     role = body.get("role", None)

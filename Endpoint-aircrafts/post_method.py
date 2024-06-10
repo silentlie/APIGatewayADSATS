@@ -72,7 +72,7 @@ def post_method(body):
 def insert_and_get_aircraft_id(cursor, body):
     aircraft_name = body["aircraftName"]
     archived = body["archived"]
-    created_at = datetime.now()
+    created_at = body["created_at"]
 
     query = """
     INSERT INTO aircrafts (name, archived, created_at)
