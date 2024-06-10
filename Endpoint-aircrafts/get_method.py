@@ -4,8 +4,6 @@ from mysql.connector import Error
 import mysql.connector
 import os
 def get_method(parameters):
-    if not parameters:
-        return get_method_no_parameters()
     try:
         connection = connect_to_db()
         query, params = build_query(parameters)
@@ -70,7 +68,7 @@ def build_query(parameters):
         deleted_at
     FROM aircrafts
     """
-    query += " WHERE deleted_at is Null"
+    query += " WHERE deleted_at IS Null"
     # define filters if any
     filters = []
     # parameters for binding
@@ -92,11 +90,6 @@ def build_query(parameters):
         created_at = parameters["start_at"].split(',')
         filters.append("start_at BETWEEN %s AND %s")
         params.extend(created_at)
-    # filter based on date range
-    if 'deleted_at' in parameters:
-        deleted_at = parameters["deleted_at"].split(',')
-        filters.append("deleted_at BETWEEN %s AND %s")
-        params.extend(deleted_at)
     # if there is any filter add base query
     if filters:
         query += " AND " + " AND ".join(filters)
@@ -104,7 +97,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["name", "aircraft_id", "archived", "start_at", "end_at"]
+        valid_columns = ["name", "aircraft_id", "archived", "start_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters.get("asc", 'true') == 'true' else 'DESC'
@@ -129,35 +122,5 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
-# return a list string for filtering, searching, sending
-def get_method_no_parameters():
-    try:
-        # get all of aircrafts names where it is not archived
-        query = "SELECT name FROM aircrafts WHERE archived = false"
-        connection = connect_to_db()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall() 
-        names = [item[0] for item in response] # type: ignore
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(names, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
 
 # ===========================================================================

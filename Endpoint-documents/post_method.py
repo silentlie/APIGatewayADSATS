@@ -1,81 +1,107 @@
+import json
 from mysql.connector import Error
 import mysql.connector
 import os
+from datetime import datetime
+
 def post_method(body):
     try:
         connection = mysql.connector.connect(
-            host= os.environ.get('HOST'),
-            user= os.environ.get('USER'),
-            password= os.environ.get('PASSWORD'),
-            database= "adsats_database",
+            host=os.environ.get('HOST'),
+            user=os.environ.get('USER'),
+            password=os.environ.get('PASSWORD'),
+            database="adsats_database",
         )
         cursor = connection.cursor()
-        name = body.get("name", default=None)
-        emails = body.get("emails", default=None).split(',')
-        timeRange = body.get("timeRange", default=None).split(',')
-        archived = body.get("archived", default=None)
-        aircrafts = body.get("aircrafts", default=None).split(',')
-        columnName = body.get("clumnName", default=None)
-        asc = body.get("asc", default=None)
-        limit = body.get("limit")
-        offset = body.get("offset")
-        query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
-        FROM documents AS d
-        JOIN users AS u ON d.uploaded_by_id = u.user_id
-        JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
-        JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
-        JOIN aircrafts AS a ON ad.aircrafts_id = a.aircraft_id
-        """
-        conditions = []
-        params = []
-        if name is not None:
-            conditions.append("d.file_name = %s")
-            params.append(name)
-        if emails is not None:
-            placeholders = ', '.join(['%s'] * len(emails))
-            conditions.append(f"u.emails IN ({placeholders})")
-            params.extend(emails)
-        if timeRange is not None:
-            conditions.append("d.created_at BETWEEN %s AND %s")
-            params.extend(timeRange)
-        if archived is not None:
-            conditions.append("d.archived = %s")
-            params.append(archived)
-        if aircrafts is not None:
-            placeholders = ', '.join(['%s'] * len(aircrafts))
-            conditions.append(f"ad.aircraft_id IN ({placeholders})")
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-        if columnName is not None:
-            query += "ORDER BY d.%s %s"
-            params.append(columnName)
-            if asc:
-                params.append('ASC')
-            else:
-                params.append('DESC')
-        query += "LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-        
-        cursor.execute(query, params)
-        results = cursor.fetchall()
-        for row in results:
-            # need to convert to a list of dict/json
-            print(row)
-    except Error as e:
-        print(f"Error: {e}")
-    finally:
-        if connection.is_connected():
-            cursor.close()
-            connection.close()
-            print("MySQL connection is closed")
-    return {
-        'statusCode': 200,
-        'headers': {
+        document_id = insert_and_get_document_id(cursor, body)
+        connection.commit()
+
+        # aircraft_document
+        if 'aircrafts' in body:
+            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircrafts'])
+            insert_aircraft_document(cursor, document_id, aircraft_ids)
+            connection.commit()
+
+        return {
+            'statusCode': 200,
+            'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-        # this suppose to return all rows
-        'body': "Succeed"
-    }
+            'body': json.dumps(document_id)
+        }
+
+    except Error as e:
+        print(f"Error: {e}")
+        
+        return {
+            'statusCode': 500,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(f"Error: {e}")
+        }
+        
+    finally:
+        if cursor is not None:
+            cursor.close()
+        if connection.is_connected():
+            connection.close()
+            print("MySQL connection is closed")
+
+def insert_and_get_document_id(cursor, body):
+    file_name = body["file_name"]
+    email = body["email"]
+    sub_category = body["subcategory"]
+    created_at = datetime.now()
+    archived = body["archived"]
+
+    select_id = """SELECT staff_id FROM staff WHERE email = %s"""
+    cursor.execute(select_id, (email,))
+    author_id = cursor.fetchone()
+    
+    if not author_id:
+        raise ValueError(f"No staff found with email {email}")
+    author_id = author_id[0]
+
+    sub_category_id_query = """SELECT subcategory_id FROM subcategories WHERE name = %s"""  
+    cursor.execute(sub_category_id_query, (sub_category,))
+    sub_category_id = cursor.fetchone()
+    
+    if not sub_category_id:
+        raise ValueError(f"No subcategory found with name {sub_category}")
+    sub_category_id = sub_category_id[0]
+
+    query = """
+        INSERT INTO documents 
+            (author_id, subcategory_id, file_name, archived, created_at, deleted_at)
+        VALUES (%s, %s, %s, %s, %s, NULL)
+    """
+    params = [author_id, sub_category_id, file_name, archived, created_at]
+    cursor.execute(query, params)
+    
+    cursor.execute("SELECT document_id FROM documents WHERE file_name = %s AND deleted_at IS Null", (file_name,))
+    result = cursor.fetchone()
+    return result[0]
+
+def get_aircraft_ids_by_names(cursor, aircrafts):
+    format_strings = ','.join(['%s'] * len(aircrafts))
+    query = f"SELECT aircraft_id FROM aircrafts WHERE name IN ({format_strings})"
+    cursor.execute(query, tuple(aircrafts))
+    results = cursor.fetchall()
+    return [row[0] for row in results]
+
+def insert_aircraft_document(cursor, document_id, aircraft_ids):
+    query = "INSERT INTO aircraft_documents (aircraft_id, document_id) VALUES (%s, %s)"
+    for aircraft_id in aircraft_ids:
+        cursor.execute(query, (aircraft_id, document_id))
+
+# For JSON date encoding
+class DateTimeEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, datetime):
+            return obj.isoformat()
+        return super().default(obj)

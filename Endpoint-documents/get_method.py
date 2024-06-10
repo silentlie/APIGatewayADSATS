@@ -67,7 +67,7 @@ def get_method(parameters):
 def build_query(parameters):
     # the base query
     query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at
+        SELECT d.document_id, d.file_name, u.email AS author, d.archived, d.created_at
         , s.name AS sub_category, c.name AS category
         , GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
         FROM documents AS d

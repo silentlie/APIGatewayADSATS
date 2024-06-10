@@ -4,17 +4,19 @@ import os
 
 def get_method(body):
     try:
-        query = read_file("adsats_database.sql")
+        query = read_file("test.sql")
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
             user= os.environ.get('USER'),
             password= os.environ.get('PASSWORD'),
-            database= "",
+            database= "adsats_database",
         )
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
         cursor.execute(query)
         if query.strip().upper().startswith("SELECT"):
+            
             results = cursor.fetchall()
+            print(results)
             for row in results:
                 print(row)
         else:
@@ -34,7 +36,7 @@ def get_method(body):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,GET'
             },
-        'body': "Succed"
+        'body': "Succeed"
     }
 def read_file(file_path):
     with open(file_path, 'r') as file:

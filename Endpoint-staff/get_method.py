@@ -9,6 +9,11 @@ def get_method(parameters):
         return get_method_no_parameters()
     try:
         connection = connect_to_db()
+        
+        if 'email' in parameters:
+            cursor = connection.cursor(dictionary=True)
+            return get_specific_staff(cursor, parameters)
+
         query, params = build_query(parameters)
         total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         cursor = connection.cursor()
@@ -68,17 +73,16 @@ def build_query(parameters):
         created_at,
         archived
     FROM staff
+    WHERE deleted_at is Null
     """
-    query += " WHERE deleted_at is Null"
     # define filters if any
     filters = []
     # parameters for binding
     params = []
-   # search for one or many emails/users/authors/staff
-    if 'email' in parameters:
-        filters.append("email = %s")
-        params.append(parameters["email"])
-
+    # search for one or many emails/users/authors/staff
+    if 'search' in parameters:
+        filters.append("email LIKE %s")
+        params.append(parameters["search"])
     if 'archived' in parameters:
         # Ensure archived is a valid value to prevent SQL injection
         # Add other valid value if necessar
@@ -157,5 +161,43 @@ def get_method_no_parameters():
                 },
             'body': json.dumps(e._full_msg)
         }
+
+def get_specific_staff(cursor, parameters):
+    
+    query = """
+    SELECT 
+        s.staff_id,
+        s.email,
+        s.f_name,
+        s.l_name,
+        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircrafts,
+        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles
+    FROM staff AS s
+    JOIN aircraft_staff AS au
+    ON au.staff_id = s.staff_id
+    JOIN aircrafts AS a
+    ON a.aircraft_id = au.aircraft_id
+    JOIN staff_roles AS rs
+    ON rs.staff_id = s.staff_id
+    JOIN roles AS r
+    ON rs.role_id = r.role_id
+    JOIN permissions AS p
+    ON p.staff_id = s.staff_id
+    JOIN categories AS c
+    ON c.category_id = c.category_id
+    WHERE email = %s 
+    """
+    params= [parameters["email"]]
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    return {
+        'statusCode': 200,
+        'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+        'body': json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+    }
 
 # ===========================================================================

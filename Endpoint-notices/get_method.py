@@ -70,19 +70,22 @@ def build_query(parameters):
         n.notice_at,
         n.deadline_at
     FROM notices AS n
-    JOIN notifications AS nf ON nf.notice_id = n.notice_id
    	JOIN staff AS u ON u.staff_id = n.author_id
-    JOIN staff AS uu ON uu.staff_id = nf.staff_id
     """
     # only return notices that this user is received
-    query += " WHERE uu.email = %s"
-    query += " AND n.deleted_at is Null"
+    query += " WHERE n.deleted_at is Null"
     filters = []
-    params = [parameters["email"]]
+    params = []
+
+    if 'email' in parameters:
+        query += " JOIN notifications AS nf ON nf.notice_id = n.notice_id "
+        query += " JOIN staff AS uu ON uu.staff_id = nf.staff_id "
+        filters.append(" uu.email = %s")
+        params.append(parameters["email"])
         
-    if 'subject' in parameters:
+    if 'search' in parameters:
         filters.append("subject LIKE %s")
-        params.append(parameters["subject"])
+        params.append(parameters["search"])
     
     if 'categories' in parameters:
         categories = parameters["category"].split(',')
@@ -102,7 +105,7 @@ def build_query(parameters):
         valid_value = ["true", "false"]
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
+            filters.append(f"n.archived = {parameters["archived"]}")
 
     if 'resolved' in parameters:
         # Ensure archived is a valid value to prevent SQL injection
@@ -128,7 +131,7 @@ def build_query(parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["notice_id", "email", "category", "subject", "resolved", "archived", "notice_at", "deadline_at"]
+        valid_columns = ["email", "category", "subject", "resolved", "archived", "notice_at", "deadline_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'

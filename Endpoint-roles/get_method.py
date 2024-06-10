@@ -67,7 +67,9 @@ def build_query(parameters):
     SELECT  
         role_id,
         role,
+        archived,
         description
+        created_at
     FROM roles
     """
     query += " WHERE deleted_at is Null"
@@ -87,6 +89,11 @@ def build_query(parameters):
         if parameters["archived"] in valid_value:
             # in this part must parse as str cannot use binding because bool cannot be str
             filters.append(f"archived = {parameters["archived"]}")
+    # filter based on date range
+    if 'created_at' in parameters:
+        created_at = parameters["start_at"].split(',')
+        filters.append("start_at BETWEEN %s AND %s")
+        params.extend(created_at)
     # if there is any filter add base query
     if filters:
         query += " AND " + " AND ".join(filters)
