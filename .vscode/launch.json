@@ -3,6 +3,36 @@
         {
             "type": "aws-sam",
             "request": "direct-invoke",
+            "name": "Endpoint-sub-categories:lambda_function.lambda_handler (python3.12)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/Endpoint-sub-categories",
+                "lambdaHandler": "lambda_function.lambda_handler"
+            },
+            "lambda": {
+                "runtime": "python3.12",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
+            "name": "Endpoint-categories:lambda_function.lambda_handler (python3.12)",
+            "invokeTarget": {
+                "target": "code",
+                "projectRoot": "${workspaceFolder}/Endpoint-categories",
+                "lambdaHandler": "lambda_function.lambda_handler"
+            },
+            "lambda": {
+                "runtime": "python3.12",
+                "payload": {},
+                "environmentVariables": {}
+            }
+        },
+        {
+            "type": "aws-sam",
+            "request": "direct-invoke",
             "name": "Endpoint-aircrafts:lambda_function.lambda_handler (python3.12)",
             "invokeTarget": {
                 "target": "code",

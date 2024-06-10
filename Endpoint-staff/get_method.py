@@ -135,7 +135,7 @@ class DateTimeEncoder(json.JSONEncoder):
 def get_method_no_parameters():
     try:
         # get all of roles names where it is not archived
-        query = "SELECT email from staff"
+        query = "SELECT email from staff WHERE deleted_at IS Null AND archived = false"
         connection = connect_to_db()
         cursor = connection.cursor()
         cursor.execute(query)
@@ -186,7 +186,7 @@ def get_specific_staff(cursor, parameters):
     ON p.staff_id = s.staff_id
     JOIN categories AS c
     ON c.category_id = p.category_id
-    WHERE email = %s 
+    WHERE email = %s AND deleted_at IS Null
     """
     params= [parameters["email"]]
     cursor.execute(query, params)
