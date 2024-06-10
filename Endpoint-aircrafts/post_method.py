@@ -20,7 +20,7 @@ def post_method(body):
         cursor.execute(check_query, (aircraft_name,))
         result = cursor.fetchone()
 
-        if result[0]: # type: ignore
+        if result[0] > 0: # type: ignore
             return {
                 'statusCode': 400,
                 'headers': {

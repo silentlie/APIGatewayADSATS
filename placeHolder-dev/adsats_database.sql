@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 31, 2024 at 07:07 AM
+-- Generation Time: Jun 07, 2024 at 02:20 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -39,7 +39,7 @@ CREATE TABLE `aircrafts` (
   `aircraft_id` int(11) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
   `archived` tinyint(4) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` datetime DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
@@ -53,72 +53,6 @@ INSERT INTO `aircrafts` (`aircraft_id`, `name`, `archived`, `created_at`, `delet
 (3, 'LK-BMA', 0, '2023-04-14 00:00:00', NULL),
 (4, 'VP-KJS', 1, '2022-12-05 00:00:00', '2024-03-01 00:00:00'),
 (5, 'SJ-ASD', 0, '2023-04-19 00:00:00', NULL);
-
--- --------------------------------------------------------
-
---
--- Table structure for table `aircraft_crew`
---
-
-CREATE TABLE `aircraft_crew` (
-  `aircraft_id` int(11) UNSIGNED NOT NULL,
-  `staff_id` int(11) UNSIGNED NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
-
---
--- Dumping data for table `aircraft_crew`
---
-
-INSERT INTO `aircraft_crew` (`aircraft_id`, `staff_id`) VALUES
-(1, 1),
-(1, 2),
-(1, 3),
-(1, 6),
-(1, 12),
-(1, 13),
-(1, 14),
-(1, 20),
-(1, 21),
-(1, 23),
-(1, 24),
-(2, 2),
-(2, 4),
-(2, 6),
-(2, 10),
-(2, 11),
-(2, 13),
-(2, 15),
-(2, 24),
-(3, 2),
-(3, 5),
-(3, 6),
-(3, 7),
-(3, 8),
-(3, 9),
-(3, 10),
-(3, 16),
-(3, 17),
-(3, 23),
-(4, 1),
-(4, 4),
-(4, 5),
-(4, 7),
-(4, 8),
-(4, 12),
-(4, 17),
-(4, 18),
-(4, 19),
-(4, 23),
-(4, 24),
-(4, 25),
-(5, 5),
-(5, 6),
-(5, 7),
-(5, 8),
-(5, 10),
-(5, 17),
-(5, 22),
-(5, 24);
 
 -- --------------------------------------------------------
 
@@ -208,6 +142,72 @@ INSERT INTO `aircraft_notices` (`aircraft_id`, `notice_id`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `aircraft_staff`
+--
+
+CREATE TABLE `aircraft_staff` (
+  `aircraft_id` int(11) UNSIGNED NOT NULL,
+  `staff_id` int(11) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
+
+--
+-- Dumping data for table `aircraft_staff`
+--
+
+INSERT INTO `aircraft_staff` (`aircraft_id`, `staff_id`) VALUES
+(1, 1),
+(1, 2),
+(1, 3),
+(1, 6),
+(1, 12),
+(1, 13),
+(1, 14),
+(1, 20),
+(1, 21),
+(1, 23),
+(1, 24),
+(2, 2),
+(2, 4),
+(2, 6),
+(2, 10),
+(2, 11),
+(2, 13),
+(2, 15),
+(2, 24),
+(3, 2),
+(3, 5),
+(3, 6),
+(3, 7),
+(3, 8),
+(3, 9),
+(3, 10),
+(3, 16),
+(3, 17),
+(3, 23),
+(4, 1),
+(4, 4),
+(4, 5),
+(4, 7),
+(4, 8),
+(4, 12),
+(4, 17),
+(4, 18),
+(4, 19),
+(4, 23),
+(4, 24),
+(4, 25),
+(5, 5),
+(5, 6),
+(5, 7),
+(5, 8),
+(5, 10),
+(5, 17),
+(5, 22),
+(5, 24);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `categories`
 --
 
@@ -243,7 +243,7 @@ CREATE TABLE `documents` (
   `subcategory_id` int(11) UNSIGNED DEFAULT NULL,
   `file_name` varchar(255) NOT NULL,
   `archived` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
@@ -410,7 +410,7 @@ CREATE TABLE `notices` (
   `notice_at` datetime DEFAULT NULL,
   `deadline_at` datetime DEFAULT NULL,
   `archived` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
@@ -1103,6 +1103,7 @@ CREATE TABLE `roles` (
   `role_id` int(11) UNSIGNED NOT NULL,
   `role` varchar(255) NOT NULL,
   `description` varchar(255) DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `archived` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
@@ -1111,13 +1112,13 @@ CREATE TABLE `roles` (
 -- Dumping data for table `roles`
 --
 
-INSERT INTO `roles` (`role_id`, `role`, `description`, `archived`, `deleted_at`) VALUES
-(1, 'administrator', 'the administration of a business, organization, etc.', 0, NULL),
-(2, 'cabin attendants', 'The individual that attends to passenger\'s safety and comfort while in flight.', 0, NULL),
-(3, 'engineers', 'a person who designs, builds, or maintains engines, machines, or structures', 0, NULL),
-(4, 'pilots', 'a person who operates the flying controls of an aircraft.', 0, NULL),
-(5, 'safety officer', 'the person who is responsible for the safety of the people who work or visit there.', 0, NULL),
-(6, 'bookkeeper', '', 1, '2023-11-18 00:00:00');
+INSERT INTO `roles` (`role_id`, `role`, `description`, `created_at`, `archived`, `deleted_at`) VALUES
+(1, 'administrator', 'the administration of a business, organization, etc.', '2023-03-01 00:00:00', 0, NULL),
+(2, 'cabin attendants', 'The individual that attends to passenger\'s safety and comfort while in flight.', '2023-03-12 00:00:00', 0, NULL),
+(3, 'engineers', 'a person who designs, builds, or maintains engines, machines, or structures', '2023-04-01 00:00:00', 0, NULL),
+(4, 'pilots', 'a person who operates the flying controls of an aircraft.', '2023-07-06 00:00:00', 0, NULL),
+(5, 'safety officer', 'the person who is responsible for the safety of the people who work or visit there.', '2023-03-01 00:00:00', 0, NULL),
+(6, 'bookkeeper', '', '2023-05-09 00:00:00', 1, '2023-11-18 00:00:00');
 
 -- --------------------------------------------------------
 
@@ -1131,7 +1132,7 @@ CREATE TABLE `staff` (
   `l_name` varchar(255) NOT NULL,
   `email` varchar(255) NOT NULL,
   `archived` tinyint(4) UNSIGNED NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `deleted_at` datetime DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
@@ -1271,14 +1272,6 @@ ALTER TABLE `aircrafts`
   ADD UNIQUE KEY `name_UNIQUE` (`name`);
 
 --
--- Indexes for table `aircraft_crew`
---
-ALTER TABLE `aircraft_crew`
-  ADD PRIMARY KEY (`aircraft_id`,`staff_id`),
-  ADD KEY `fk_aircraft_crew_staff1_idx` (`staff_id`) USING BTREE,
-  ADD KEY `fk_aircraft_crew_aircrafts1_idx` (`aircraft_id`) USING BTREE;
-
---
 -- Indexes for table `aircraft_documents`
 --
 ALTER TABLE `aircraft_documents`
@@ -1293,6 +1286,14 @@ ALTER TABLE `aircraft_notices`
   ADD PRIMARY KEY (`aircraft_id`,`notice_id`),
   ADD KEY `fk_aircraft_notices_notices1_idx` (`notice_id`) USING BTREE,
   ADD KEY `fk_aircraft_notices_aircrafts1_idx` (`aircraft_id`) USING BTREE;
+
+--
+-- Indexes for table `aircraft_staff`
+--
+ALTER TABLE `aircraft_staff`
+  ADD PRIMARY KEY (`aircraft_id`,`staff_id`),
+  ADD KEY `fk_aircraft_crew_staff1_idx` (`staff_id`) USING BTREE,
+  ADD KEY `fk_aircraft_crew_aircrafts1_idx` (`aircraft_id`) USING BTREE;
 
 --
 -- Indexes for table `categories`
@@ -1441,13 +1442,6 @@ ALTER TABLE `subcategories`
 --
 
 --
--- Constraints for table `aircraft_crew`
---
-ALTER TABLE `aircraft_crew`
-  ADD CONSTRAINT `fk_aircraft_crew_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aircraft_crew_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
-
---
 -- Constraints for table `aircraft_documents`
 --
 ALTER TABLE `aircraft_documents`
@@ -1460,6 +1454,13 @@ ALTER TABLE `aircraft_documents`
 ALTER TABLE `aircraft_notices`
   ADD CONSTRAINT `fk_aircraft_notices_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_aircrafts_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+--
+-- Constraints for table `aircraft_staff`
+--
+ALTER TABLE `aircraft_staff`
+  ADD CONSTRAINT `fk_aircraft_crew_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_crew_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `documents`

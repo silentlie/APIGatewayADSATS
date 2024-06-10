@@ -69,7 +69,20 @@ def insert_and_get_staff_id(cursor, body):
     email = body["email"]
     # required
     archived = body["archived"]
-    # TODO:need to check if email is exist
+    check_query = "SELECT COUNT(*) FROM staff WHERE email = %s"
+    cursor.execute(check_query, (email,))
+    result = cursor.fetchone()
+
+    if result[0] > 0: # type: ignore
+        return {
+            'statusCode': 400,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(f"staff with email '{email}' already exists.")
+        }
 
     query = """
     INSERT INTO staff (f_name, l_name, email, archived, created_at, deleted_at) VALUES (%s, %s, %s, %s, %s, Null)

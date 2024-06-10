@@ -6,16 +6,16 @@ from patch_method import patch_method
 from delete_method import delete_method
 def lambda_handler(event, context):
     method = event.get("httpMethod")
-    bodyStr = event.get("body")
+    body_str = event.get("body")
     parameters = event.get("queryStringParameters")
     print(method)
-    print(bodyStr)
+    print(body_str)
     print(parameters)
     body = {}
-    if isinstance(bodyStr, str):
-        body = json.loads(bodyStr)
+    if isinstance(body_str, str):
+        body = json.loads(body_str)
     else:
-        body = bodyStr
+        body = body_str
     if method == "GET":
         return get_method(parameters)
     if method == "PUT":
