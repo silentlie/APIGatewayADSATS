@@ -35,8 +35,8 @@ def post_method(body):
         connection.commit()
 
         # Insert into permission table
-        if 'staff_email' in body:
-            staff_ids = get_staff_ids_by_email(cursor, body['staff_email'])
+        if 'staff' in body:
+            staff_ids = get_staff_ids_by_email(cursor, body['staff'])
             insert_permission(cursor, category_id, staff_ids)
             connection.commit()
 

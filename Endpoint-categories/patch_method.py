@@ -25,6 +25,15 @@ def patch_method(body):
             update_category(cursor, body, category_id)
             connection.commit()
 
+        return {
+            'statusCode': 200,
+            'headers': {
+                'Access-Control-Allow-Headers': '*',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            },
+            'body': json.dumps(category_id)
+        }
     except Error as e:
         print(f"Error: {str(e)}")
         return {
@@ -38,19 +47,7 @@ def patch_method(body):
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps({
-            "message": "Succeeded",
-            "category_id": category_id,
-            
-        })
-    }
+    
 
 def update_category(cursor, body, category_id):
     category = body.get("name", "")

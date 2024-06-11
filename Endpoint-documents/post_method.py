@@ -56,7 +56,7 @@ def insert_and_get_document_id(cursor, body):
     file_name = body["file_name"]
     email = body["email"]
     sub_category = body["subcategory"]
-    created_at = datetime.now()
+    created_at = body.get("created_at", default = datetime.now())
     archived = body["archived"]
 
     select_id = """SELECT staff_id FROM staff WHERE email = %s"""

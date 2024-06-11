@@ -33,8 +33,8 @@ def post_method(body):
         role_id = insert_and_get_role_id(cursor, body)
         connection.commit()
 
-        if 'emails' in body and body['emails']:
-            staff_ids = get_staff_ids_by_names(cursor, body['emails'])
+        if 'staff' in body and body['staff']:
+            staff_ids = get_staff_ids_by_names(cursor, body['staff'])
             insert_staff_roles(cursor, role_id, staff_ids)
             connection.commit()
 

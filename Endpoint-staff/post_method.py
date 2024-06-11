@@ -86,10 +86,12 @@ def insert_and_get_staff_id(cursor, body):
     # required
     archived = body["archived"]
 
+    created_at = body["created_at"]
+
     query = """
     INSERT INTO staff (f_name, l_name, email, archived, created_at, deleted_at) VALUES (%s, %s, %s, %s, %s, Null)
     """
-    params = [f_name, l_name, email, archived, datetime.now()]
+    params = [f_name, l_name, email, archived, created_at]
     cursor.execute(query, params)
     
     query = "SELECT staff_id FROM staff WHERE email = %s"
