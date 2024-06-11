@@ -151,12 +151,12 @@ def limit_query(parameters):
         d.document_id, 
         d.file_name, 
         s.email AS author, 
-        GROUP_CONCAT(r.role SEPARATOR ', ') AS roles,
+        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
         d.archived, 
         d.created_at, 
         sc.name AS subcategory, 
         c.name AS category,
-        GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
+        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircraft
         FROM documents AS d
         JOIN staff AS s 
         ON d.author_id = s.staff_id

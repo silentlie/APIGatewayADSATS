@@ -21,7 +21,7 @@ def put_method(body):
         limit = body.get("limit")
         offset = body.get("offset")
         query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
+        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') 
         FROM documents AS d
         JOIN users AS u ON d.uploaded_by_id = u.user_id
         JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id

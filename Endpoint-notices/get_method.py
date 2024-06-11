@@ -63,7 +63,7 @@ def build_query(parameters):
     SELECT 
         n.notice_id,
         s.email AS author,
-        GROUP_CONCAT(r.role SEPARATOR ', ') AS roles,
+        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
         n.category,
         n.subject,
         n.resolved,
