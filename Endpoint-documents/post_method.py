@@ -17,8 +17,8 @@ def post_method(body):
         connection.commit()
 
         # aircraft_document
-        if 'aircrafts' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircrafts'])
+        if 'aircraft' in body:
+            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
             insert_aircraft_document(cursor, document_id, aircraft_ids)
             connection.commit()
 
@@ -87,10 +87,10 @@ def insert_and_get_document_id(cursor, body):
     result = cursor.fetchone()
     return result[0]
 
-def get_aircraft_ids_by_names(cursor, aircrafts):
-    format_strings = ','.join(['%s'] * len(aircrafts))
+def get_aircraft_ids_by_names(cursor, aircraft):
+    format_strings = ','.join(['%s'] * len(aircraft))
     query = f"SELECT aircraft_id FROM aircrafts WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(aircrafts))
+    cursor.execute(query, tuple(aircraft))
     results = cursor.fetchall()
     return [row[0] for row in results]
 

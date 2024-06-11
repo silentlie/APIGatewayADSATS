@@ -14,13 +14,13 @@ def put_method(body):
         cursor = connection.cursor()
 
         aircraft_id = body["aircraft_id"]
-        new_aircrafts = body["new_aircrafts"]
+        new_aircraft = body["new_aircraft"]
         new_archived = body["new_archived"]
 
-        if new_aircrafts is None or new_archived is None or aircraft_id is None:
+        if new_aircraft is None or new_archived is None or aircraft_id is None:
             return {
                 'statusCode': 400,
-                'body': "Invalid input: aircraft_id, new_aircrafts, and new_archived must be provided"
+                'body': "Invalid input: aircraft_id, new_aircraft, and new_archived must be provided"
             }
 
         # Convert string "true" or "false" to boolean value
@@ -33,7 +33,7 @@ def put_method(body):
                 WHERE aircraft_id = %s
                 """
 
-        cursor.execute(update_query, (new_aircrafts, new_archived, aircraft_id))
+        cursor.execute(update_query, (new_aircraft, new_archived, aircraft_id))
         connection.commit()
 
     except Error as e:

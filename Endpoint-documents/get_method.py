@@ -100,11 +100,11 @@ def build_query(nested_query, params, parameters):
         filters.append(f"category IN ({placeholders})")
         params.extend(categories)
     # search for one or many aircrafts that relate to document
-    if 'aircrafts' in parameters:
-        aircrafts = parameters["aircrafts"].split(',')
-        placeholders = " OR ".join(["FIND_IN_SET(%s, aircrafts) > 0"] * len(aircrafts))
+    if 'aircraft' in parameters:
+        aircraft = parameters["aircraft"].split(',')
+        placeholders = " OR ".join(["FIND_IN_SET(%s, aircraft) > 0"] * len(aircraft))
         filters.append(f"({placeholders})")
-        params.extend(aircrafts)
+        params.extend(aircraft)
     # start date and end date of create_at
     if 'create_at' in parameters:
         create_at = parameters["create_at"].split(',')
@@ -133,7 +133,7 @@ def build_query(nested_query, params, parameters):
     if 'sort_column' in parameters:
         # Ensure sort_column is a valid column name to prevent SQL injection
         # Add other valid column names if necessary
-        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "sub_category", "category", "aircrafts"]
+        valid_columns = ["document_id", "file_name", "email", "archived", "created_at", "sub_category", "category", "aircraft"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
             order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
@@ -156,7 +156,7 @@ def limit_query(parameters):
         d.created_at, 
         sc.name AS subcategory, 
         c.name AS category,
-        GROUP_CONCAT(a.name SEPARATOR ', ') AS aircrafts
+        GROUP_CONCAT(a.name SEPARATOR ', ') AS aircraft
         FROM documents AS d
         JOIN staff AS s 
         ON d.author_id = s.staff_id
@@ -187,12 +187,12 @@ def limit_query(parameters):
         placeholders = ', '.join(['%s'] * len(roles))
         limits.append(f"r.role IN ({placeholders})")
         params.extend(roles)
-    # Aircrafts limit
-    if 'limit_aircrafts' in parameters:
-        aircrafts = parameters["limit_aircrafts"].split(',')
-        placeholders = ', '.join(['%s'] * len(aircrafts))
+    # Aircraft limit
+    if 'limit_aircraft' in parameters:
+        aircraft = parameters["limit_aircraft"].split(',')
+        placeholders = ', '.join(['%s'] * len(aircraft))
         limits.append(f"a.name IN ({placeholders})")
-        params.extend(aircrafts)
+        params.extend(aircraft)
     # Sub-categories limit
     if 'limit_subcategories' in parameters:
         sub_categories = parameters["limit_subcategories"].split(',')

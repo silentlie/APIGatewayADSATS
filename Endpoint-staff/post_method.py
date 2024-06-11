@@ -31,9 +31,9 @@ def post_method(body):
         staff_id = insert_and_get_staff_id(cursor, body)
         connection.commit()
         print("finish staff_id")
-        if 'aircrafts' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircrafts'])
-            insert_staff_aircrafts(cursor, staff_id, aircraft_ids)
+        if 'aircraft' in body:
+            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
+            insert_staff_aircraft(cursor, staff_id, aircraft_ids)
             connection.commit()
         
         if 'roles' in body:
@@ -107,10 +107,10 @@ def get_role_ids_by_names(cursor, roles):
     results = cursor.fetchall()
     return [row[0] for row in results]
 
-def get_aircraft_ids_by_names(cursor, aircrafts):
-    format_strings = ','.join(['%s'] * len(aircrafts))
+def get_aircraft_ids_by_names(cursor, aircraft):
+    format_strings = ','.join(['%s'] * len(aircraft))
     query = f"SELECT aircraft_id FROM aircrafts WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(aircrafts))
+    cursor.execute(query, tuple(aircraft))
     results = cursor.fetchall()
     return [row[0] for row in results]
 
@@ -126,7 +126,7 @@ def insert_staff_roles(cursor, staff_id, role_ids):
     for role_id in role_ids:
         cursor.execute(query, (staff_id, role_id))
 
-def insert_staff_aircrafts(cursor, staff_id, aircraft_ids):
+def insert_staff_aircraft(cursor, staff_id, aircraft_ids):
     query = "INSERT INTO aircraft_staff VALUES (%s, %s)"
     for aircraft_id in aircraft_ids:
         cursor.execute(query, (aircraft_id, staff_id))

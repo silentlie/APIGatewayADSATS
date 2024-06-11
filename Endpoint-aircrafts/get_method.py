@@ -127,7 +127,7 @@ class DateTimeEncoder(json.JSONEncoder):
 # return a list string for filtering, searching, sending
 def get_method_no_parameters():
     try:
-        # get all of aircrafts names where it is not archived
+        # get all of aircraft names where it is not archived
         query = "SELECT name FROM aircrafts WHERE archived = false and deleted_at IS Null"
         connection = connect_to_db()
         cursor = connection.cursor()

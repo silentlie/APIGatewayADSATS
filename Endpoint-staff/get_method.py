@@ -170,7 +170,7 @@ def get_specific_staff(cursor, parameters):
         s.email,
         s.f_name,
         s.l_name,
-        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircrafts,
+        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircraft,
         GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
         GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories,
         GROUP_CONCAT(DISTINCT sc.name SEPARATOR ', ') AS subcategories
