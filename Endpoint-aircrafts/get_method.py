@@ -68,7 +68,7 @@ def build_query(parameters):
         archived, 
         created_at,
         deleted_at
-    FROM aircrafts
+    FROM aircraft
     """
     query += " WHERE deleted_at IS Null"
     # define filters if any
@@ -128,7 +128,7 @@ class DateTimeEncoder(json.JSONEncoder):
 def get_method_no_parameters():
     try:
         # get all of aircraft names where it is not archived
-        query = "SELECT name FROM aircrafts WHERE archived = false and deleted_at IS Null"
+        query = "SELECT name FROM aircraft WHERE archived = false and deleted_at IS Null"
         connection = connect_to_db()
         cursor = connection.cursor()
         cursor.execute(query)

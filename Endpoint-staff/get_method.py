@@ -177,7 +177,7 @@ def get_specific_staff(cursor, parameters):
     FROM staff AS s
     JOIN aircraft_staff AS au
     ON au.staff_id = s.staff_id
-    JOIN aircrafts AS a
+    JOIN aircraft AS a
     ON a.aircraft_id = au.aircraft_id
     JOIN staff_roles AS rs
     ON rs.staff_id = s.staff_id

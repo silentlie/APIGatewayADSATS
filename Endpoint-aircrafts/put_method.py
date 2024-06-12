@@ -27,7 +27,7 @@ def put_method(body):
         new_archived = True if new_archived.lower() == "true" else False
 
         update_query = """
-                UPDATE aircrafts
+                UPDATE aircraft
                 SET name = %s,
                     archived = %s
                 WHERE aircraft_id = %s

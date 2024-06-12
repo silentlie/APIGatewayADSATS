@@ -1273,7 +1273,7 @@ ALTER TABLE `aircraft`
 ALTER TABLE `aircraft_documents`
   ADD PRIMARY KEY (`aircraft_id`,`document_id`),
   ADD KEY `fk_aircraft_documents_documents1_idx` (`document_id`),
-  ADD KEY `fk_aircraft_documents_aircrafts1_idx` (`aircraft_id`);
+  ADD KEY `fk_aircraft_documents_aircraft1_idx` (`aircraft_id`);
 
 --
 -- Indexes for table `aircraft_notices`
@@ -1281,15 +1281,15 @@ ALTER TABLE `aircraft_documents`
 ALTER TABLE `aircraft_notices`
   ADD PRIMARY KEY (`aircraft_id`,`notice_id`),
   ADD KEY `fk_aircraft_notices_notices1_idx` (`notice_id`) USING BTREE,
-  ADD KEY `fk_aircraft_notices_aircrafts1_idx` (`aircraft_id`) USING BTREE;
+  ADD KEY `fk_aircraft_notices_aircraft1_idx` (`aircraft_id`) USING BTREE;
 
 --
 -- Indexes for table `aircraft_staff`
 --
 ALTER TABLE `aircraft_staff`
   ADD PRIMARY KEY (`aircraft_id`,`staff_id`),
-  ADD KEY `fk_aircraft_crew_staff1_idx` (`staff_id`) USING BTREE,
-  ADD KEY `fk_aircraft_crew_aircrafts1_idx` (`aircraft_id`) USING BTREE;
+  ADD KEY `fk_aircraft_staff_staff1_idx` (`staff_id`) USING BTREE,
+  ADD KEY `fk_aircraft_staff_aircraft1_idx` (`aircraft_id`) USING BTREE;
 
 --
 -- Indexes for table `categories`
@@ -1448,14 +1448,14 @@ ALTER TABLE `aircraft_documents`
 --
 ALTER TABLE `aircraft_notices`
   ADD CONSTRAINT `fk_aircraft_notices_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aircrafts_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_aircraft_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `aircraft_staff`
 --
 ALTER TABLE `aircraft_staff`
-  ADD CONSTRAINT `fk_aircraft_crew_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aircraft_crew_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_aircraft_staff_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_staff_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `documents`

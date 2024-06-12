@@ -4,7 +4,7 @@ import os
 
 def get_method(body):
     try:
-        query = read_file("test.sql")
+        query = read_file("adsats_database.sql")
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
             user= os.environ.get('USER'),
@@ -12,7 +12,7 @@ def get_method(body):
             database= "adsats_database",
         )
         cursor = connection.cursor(dictionary=True)
-        cursor.execute(query)
+        cursor.execute(query, multi= True)
         if query.strip().upper().startswith("SELECT"):
             
             results = cursor.fetchall()
@@ -21,7 +21,7 @@ def get_method(body):
                 print(row)
         else:
             connection.commit()
-            print(f"Query executed successfully and changes committed")
+            print("Query executed successfully and changes committed")
     except Error as e:
         print(f"Error: {e}")
     finally:

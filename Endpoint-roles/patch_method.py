@@ -24,6 +24,13 @@ def patch_method(body):
         if 'description' in body or 'role' in body:
             update_role(cursor, body, role_id)
             connection.commit()
+            
+        if 'staff' in body:
+            delete_staff_role(cursor, role_id)
+            connection.commit()
+            staff_ids = select_staff_ids(cursor, body['staff'])
+            insert_staff_role(cursor, staff_ids, role_id)
+            connection.commit()
         return {
             'statusCode': 200,
             'headers': {
@@ -54,8 +61,8 @@ def patch_method(body):
     
 
 def update_role(cursor, body, role_id):
-    role = body["role"]
-    description = body["description"]
+    role = body.get("role", None)
+    description = body.get("description", None)
     
     update_fields = []
     params = []
@@ -88,3 +95,37 @@ def update_archived_value(cursor, role_id, archived):
     params = [archived, role_id]
     cursor.execute(query, params)
     print(f"Updated archived status to {archived} for role ID: {role_id}")
+
+def delete_staff_role(cursor, role_id):
+    delete_query = """
+        DELETE FROM staff_roles
+        WHERE role_id = %s
+    """
+    params = [role_id]
+    cursor.execute(delete_query, params)
+
+def select_staff_ids(cursor, staff_emails):
+    staff_ids = []
+    for email in staff_emails:
+        select_query = """
+            SELECT staff_id
+            FROM staff
+            WHERE email = %s
+        """
+        cursor.execute(select_query, (email,))
+        result = cursor.fetchone()
+        if result:
+            staff_ids.append(result[0])
+    return staff_ids
+
+def insert_staff_role(cursor, staff_ids, role_id):
+    insert_query = """
+        INSERT INTO staff_roles (staff_id, role_id)
+        VALUES (%s, %s)
+    """
+    for staff_id in staff_ids:
+        params = (role_id, staff_id)
+        cursor.execute(insert_query, params)
+
+
+

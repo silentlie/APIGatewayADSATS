@@ -22,6 +22,13 @@ def patch_method(body):
         if 'email' in body or 'subcategory' in body or 'file_name' in body:
             update_document(cursor, body, document_id)
             connection.commit()
+            
+        if 'aircraft' in body:
+            delete_aircraft_document(cursor, document_id)
+            connection.commit()
+            aircraft_ids = select_aircraft_ids(cursor, body['aircraft'])
+            insert_aircraft_document(cursor, document_id, aircraft_ids)
+            connection.commit()
 
     except Error as e:
         print(f"Error: {str(e)}")
@@ -87,3 +94,33 @@ def get_staff_id(cursor, email):
     result = cursor.fetchone()
     return result[0] if result else None
 
+def delete_aircraft_document(cursor, document_id):
+    delete_query = """ DELETE FROM aircraft_documents
+                         WHERE document_id = %s
+                        """
+    params = [document_id]
+    cursor.execute(delete_query, params)
+    
+def select_aircraft_ids(cursor, aircraft):
+    aircraft_id = []
+    for name in aircraft:
+        select_query = """
+            SELECT aircraft_id
+            FROM aircraft
+            WHERE name = %s
+        """
+        cursor.execute(select_query, (name,))
+        result = cursor.fetchone()
+        if result:
+            aircraft_id.append(result[0])
+    return aircraft_id
+
+
+def insert_aircraft_document(cursor, document_id, aircraft_ids):
+    insert_query = """
+        INSERT INTO aircraft_documents (document_id, aircraft_id)
+        VALUES (%s, %s)
+    """
+    for id in aircraft_ids:
+        params = (document_id, id)
+        cursor.execute(insert_query, params)

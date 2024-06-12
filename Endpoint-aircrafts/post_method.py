@@ -16,7 +16,7 @@ def post_method(body):
 
         # Check if the aircraft name already exists
         aircraft_name = body["aircraftName"]
-        check_query = "SELECT COUNT(*) FROM aircrafts WHERE name = %s"
+        check_query = "SELECT COUNT(*) FROM aircraft WHERE name = %s"
         cursor.execute(check_query, (aircraft_name,))
         result = cursor.fetchone()
 
@@ -75,13 +75,13 @@ def insert_and_get_aircraft_id(cursor, body):
     created_at = body["created_at"]
 
     query = """
-    INSERT INTO aircrafts (name, archived, created_at)
+    INSERT INTO aircraft (name, archived, created_at)
     VALUES (%s, %s, %s)
     """
     params = [aircraft_name, archived, created_at]
     cursor.execute(query, params)
     
-    query = "SELECT aircraft_id FROM aircrafts WHERE name = %s"
+    query = "SELECT aircraft_id FROM aircraft WHERE name = %s"
     cursor.execute(query, (aircraft_name,))
     result = cursor.fetchone()
     print(result)

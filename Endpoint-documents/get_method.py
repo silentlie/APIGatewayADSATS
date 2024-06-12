@@ -99,7 +99,7 @@ def build_query(nested_query, params, parameters):
         placeholders = ', '.join(['%s'] * len(categories))
         filters.append(f"category IN ({placeholders})")
         params.extend(categories)
-    # search for one or many aircrafts that relate to document
+    # search for one or many aircraft that relate to document
     if 'aircraft' in parameters:
         aircraft = parameters["aircraft"].split(',')
         placeholders = " OR ".join(["FIND_IN_SET(%s, aircraft) > 0"] * len(aircraft))
@@ -170,7 +170,7 @@ def limit_query(parameters):
         ON sc.category_id = c.category_id
         LEFT OUTER JOIN aircraft_documents AS ad 
         ON ad.document_id = d.document_id
-        LEFT OUTER JOIN aircrafts AS a 
+        LEFT OUTER JOIN aircraft AS a 
         ON ad.aircraft_id = a.aircraft_id
         WHERE d.deleted_at IS Null
         

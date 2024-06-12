@@ -109,7 +109,7 @@ def get_role_ids_by_names(cursor, roles):
 
 def get_aircraft_ids_by_names(cursor, aircraft):
     format_strings = ','.join(['%s'] * len(aircraft))
-    query = f"SELECT aircraft_id FROM aircrafts WHERE name IN ({format_strings})"
+    query = f"SELECT aircraft_id FROM aircraft WHERE name IN ({format_strings})"
     cursor.execute(query, tuple(aircraft))
     results = cursor.fetchall()
     return [row[0] for row in results]

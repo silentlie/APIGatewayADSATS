@@ -17,8 +17,8 @@ def delete_method(body):
         emails = body.get("emails", default=None).split(',')
         timeRange = body.get("timeRange", default=None).split(',')
         archived = body.get("archived", default=None)
-        aircrafts = body.get("aircrafts", default=None).split(',')
-        columnName = body.get("columnName", default=None)
+        aircraft = body.get("aircraft", default=None).split(',')
+        column_name = body.get("columnName", default=None)
         asc = body.get("asc", default=None)
         limit = body.get("limit")
         offset = body.get("offset")
@@ -28,7 +28,7 @@ def delete_method(body):
         JOIN users AS u ON d.uploaded_by_id = u.user_id
         JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
         JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
-        JOIN aircrafts AS a ON ad.aircrafts_id = a.aircraft_id
+        JOIN aircraft AS a ON ad.aircraft_id = a.aircraft_id
         """
         conditions = []
         params = []
@@ -45,14 +45,14 @@ def delete_method(body):
         if archived is not None:
             conditions.append("d.archived = %s")
             params.append(archived)
-        if aircrafts is not None:
-            placeholders = ', '.join(['%s'] * len(aircrafts))
+        if aircraft is not None:
+            placeholders = ', '.join(['%s'] * len(aircraft))
             conditions.append(f"ad.aircraft_id IN ({placeholders})")
         if conditions:
             query += " WHERE " + " AND ".join(conditions)
-        if columnName is not None:
+        if column_name is not None:
             query += "ORDER BY d.%s %s"
-            params.append(columnName)
+            params.append(column_name)
             if asc:
                 params.append('ASC')
             else:

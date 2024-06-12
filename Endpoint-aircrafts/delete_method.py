@@ -23,7 +23,7 @@ def delete_method(body):
             }
 
         update_query = """
-            UPDATE aircrafts
+            UPDATE aircraft
             SET deleted_at = %s
             WHERE aircraft_id = %s
         """
