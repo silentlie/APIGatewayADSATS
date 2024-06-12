@@ -14,7 +14,7 @@ def post_method(body):
         cursor = connection.cursor()
 
         # Check if the category name already exists
-        category_name = body.get("category_name")
+        category_name = body["category_name"]
         check_query = "SELECT COUNT(*) FROM categories WHERE name = %s"
         cursor.execute(check_query, (category_name,))
         result = cursor.fetchone()
@@ -69,7 +69,7 @@ def post_method(body):
 
 
 def insert_get_category_id(cursor, body):
-    category_name = body.get("category_name")
+    category_name = body["category_name"]
     
     query = """
         INSERT INTO categories (name, archived)

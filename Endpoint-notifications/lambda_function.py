@@ -1,7 +1,5 @@
 import json
-from post_method import post_method
 from get_method import get_method
-from put_method import put_method
 from patch_method import patch_method
 
 def lambda_handler(event, context):
@@ -21,10 +19,6 @@ def lambda_handler(event, context):
     
     if method == "GET":
         return get_method(parameters)
-    if method == "PUT":
-        return put_method(body)
-    if method == "POST":
-        return post_method(body)
     if method == "PATCH":
         return patch_method(body)
     else:

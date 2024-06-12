@@ -54,8 +54,8 @@ def patch_method(body):
     
 
 def update_role(cursor, body, role_id):
-    role = body.get("role", None)
-    description = body.get("description", None)
+    role = body["role"]
+    description = body["description"]
     
     update_fields = []
     params = []

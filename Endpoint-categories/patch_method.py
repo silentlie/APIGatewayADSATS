@@ -50,7 +50,7 @@ def patch_method(body):
     
 
 def update_category(cursor, body, category_id):
-    category = body.get("name", "")
+    category = body["name"]
     
     update_query = """
         UPDATE categories

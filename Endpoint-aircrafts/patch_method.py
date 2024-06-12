@@ -55,7 +55,7 @@ def patch_method(body):
     
 
 def update_aircraft(cursor, body, aircraft_id):
-    aircraft = body.get("name", "")
+    aircraft = body["name"]
     
     update_query = """
         UPDATE aircrafts

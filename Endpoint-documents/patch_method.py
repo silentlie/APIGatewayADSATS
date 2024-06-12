@@ -47,9 +47,9 @@ def patch_method(body):
     }
 
 def update_document(cursor, body, document_id):
-    file_name = body.get("file_name", None)
-    email = body.get("email", None)
-    subcategory = body.get("subcategory", None)
+    file_name = body["file_name"]
+    email = body["email"]
+    subcategory = body["subcategory"]
     
     subcategory_id = get_subcategory_id(cursor, subcategory)
     staff_id = get_staff_id(cursor, email)

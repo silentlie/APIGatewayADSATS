@@ -49,9 +49,9 @@ def patch_method(body):
     }
 
 def update_staff(cursor, body, staff_id):
-    f_name = body.get("f_name")
-    l_name = body.get("l_name")
-    email = body.get("email")
+    f_name = body["f_name"]
+    l_name = body["l_name"]
+    email = body["email"]
 
     update_query = """
         UPDATE staff

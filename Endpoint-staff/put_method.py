@@ -13,11 +13,11 @@ def put_method(body):
         )
         cursor = connection.cursor()
 
-        staff_id = body.get("staff_id")
-        updatef_name = body.get("updatef_name")
-        updatel_name = body.get("updatel_name")
-        update_email = body.get("update_email")
-        new_archived = body.get("new_archived")
+        staff_id = body["staff_id"]
+        updatef_name = body["updatef_name"]
+        updatel_name = body["updatel_name"]
+        update_email = body["update_email"]
+        new_archived = body["new_archived"]
 
         if staff_id is None or updatef_name is None or updatel_name is None or update_email is None or new_archived is None:
             return {

@@ -13,10 +13,10 @@ def put_method(body):
         )
         cursor = connection.cursor()
 
-        role_id = body.get("role_id")
-        new_role = body.get("new_role")
-        new_description = body.get("new_description")
-        new_archived = body.get("new_archived")
+        role_id = body["role_id"]
+        new_role = body["new_role"]
+        new_description = body["new_description"]
+        new_archived = body["new_archived"]
 
         if new_role is None or new_archived is None or role_id is None:
             return {

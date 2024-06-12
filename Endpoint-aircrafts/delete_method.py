@@ -14,7 +14,7 @@ def delete_method(body):
         )
         cursor = connection.cursor()
 
-        aircraft_id = body.get("aircraft_id")
+        aircraft_id = body["aircraft_id"]
 
         if not aircraft_id:
             return {

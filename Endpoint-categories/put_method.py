@@ -13,9 +13,9 @@ def put_method(body):
         )
         cursor = connection.cursor()
 
-        category_id = body.get("category_id")
-        new_category = body.get("new_category")
-        new_archived = body.get("new_archived")
+        category_id = body["category_id"]
+        new_category = body["new_category"]
+        new_archived = body["new_archived"]
 
         if new_category is None or new_archived is None or category_id is None:
             return {

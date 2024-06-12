@@ -14,7 +14,7 @@ def delete_method(body):
         )
         cursor = connection.cursor()
 
-        staff_id = body.get("staff_id")
+        staff_id = body["staff_id"]
 
         if not staff_id:
             return {

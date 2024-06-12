@@ -14,7 +14,7 @@ def delete_method(body):
         )
         cursor = connection.cursor()
 
-        document_id = body.get("document_id")
+        document_id = body["document_id"]
 
         if not document_id:
             return {

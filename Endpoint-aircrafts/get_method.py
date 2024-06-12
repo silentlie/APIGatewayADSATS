@@ -102,7 +102,7 @@ def build_query(parameters):
         valid_columns = ["name", "aircraft_id", "archived", "start_at"]
         if parameters["sort_column"] in valid_columns:
             # asc if true, desk if false
-            order = 'ASC' if parameters.get("asc", 'true') == 'true' else 'DESC'
+            order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
             # in this part must parse as str cannot use binding because sort_column cannot be str
             query += f" ORDER BY {parameters['sort_column']} {order}"
     # finish prepare query and params
