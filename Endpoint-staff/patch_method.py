@@ -25,6 +25,12 @@ def patch_method(body):
             update_staff(cursor, body, staff_id)
             connection.commit()
 
+        if 'aircraft' in body:
+            pass
+        if 'roles' in body:
+            pass
+        if 'permissions' in body:
+            pass
     except Error as e:
         print(f"Error: {str(e)}")
         return {

@@ -25,6 +25,9 @@ def patch_method(body):
         if 'name' in body:
             update_aircraft(cursor, body, aircraft_id)
             connection.commit()
+
+        if 'staff' in body:
+            pass
         return {
             'statusCode': 200,
             'headers': {

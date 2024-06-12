@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 07, 2024 at 02:20 AM
+-- Generation Time: Jun 12, 2024 at 02:46 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -18,9 +18,6 @@ SET time_zone = "+00:00";
 /*!40101 SET NAMES utf8mb4 */;
 
 -- -----------------------------------------------------
--- Schema mydb
--- -----------------------------------------------------
--- -----------------------------------------------------
 -- Schema adsats_database
 -- -----------------------------------------------------
 DROP SCHEMA IF EXISTS `adsats_database` ;
@@ -32,10 +29,10 @@ CREATE SCHEMA IF NOT EXISTS `adsats_database` DEFAULT CHARACTER SET utf8 ;
 USE `adsats_database` ;
 
 --
--- Table structure for table `aircrafts`
+-- Table structure for table `aircraft`
 --
 
-CREATE TABLE `aircrafts` (
+CREATE TABLE `aircraft` (
   `aircraft_id` int(11) UNSIGNED NOT NULL,
   `name` varchar(255) NOT NULL,
   `archived` tinyint(4) UNSIGNED NOT NULL DEFAULT 0,
@@ -44,10 +41,10 @@ CREATE TABLE `aircrafts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
--- Dumping data for table `aircrafts`
+-- Dumping data for table `aircraft`
 --
 
-INSERT INTO `aircrafts` (`aircraft_id`, `name`, `archived`, `created_at`, `deleted_at`) VALUES
+INSERT INTO `aircraft` (`aircraft_id`, `name`, `archived`, `created_at`, `deleted_at`) VALUES
 (1, 'AB-CDE', 1, '2022-07-16 00:00:00', '2023-05-01 00:00:00'),
 (2, 'KP-SDA', 0, '2022-08-15 00:00:00', NULL),
 (3, 'LK-BMA', 0, '2023-04-14 00:00:00', NULL),
@@ -997,7 +994,6 @@ INSERT INTO `notifications` (`notice_id`, `staff_id`, `read_at`, `status`) VALUE
 --
 
 CREATE TABLE `permissions` (
-  `permission_id` int(10) UNSIGNED NOT NULL,
   `category_id` int(11) UNSIGNED NOT NULL,
   `staff_id` int(11) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
@@ -1006,92 +1002,92 @@ CREATE TABLE `permissions` (
 -- Dumping data for table `permissions`
 --
 
-INSERT INTO `permissions` (`permission_id`, `category_id`, `staff_id`) VALUES
-(1, 1, 1),
-(2, 1, 2),
-(3, 1, 4),
-(4, 1, 6),
-(5, 1, 7),
-(6, 1, 8),
-(7, 1, 10),
-(8, 1, 11),
-(9, 1, 14),
-(10, 1, 15),
-(11, 1, 16),
-(12, 1, 18),
-(13, 1, 19),
-(14, 1, 20),
-(15, 1, 21),
-(16, 1, 22),
-(17, 1, 23),
-(18, 1, 24),
-(19, 2, 3),
-(20, 2, 5),
-(21, 2, 4),
-(22, 2, 8),
-(23, 2, 6),
-(24, 2, 9),
-(25, 2, 11),
-(26, 2, 13),
-(27, 2, 14),
-(28, 2, 16),
-(29, 2, 18),
-(30, 2, 19),
-(31, 2, 23),
-(32, 3, 1),
-(33, 3, 4),
-(34, 3, 5),
-(35, 3, 8),
-(36, 3, 9),
-(37, 3, 2),
-(38, 3, 6),
-(39, 3, 10),
-(40, 3, 11),
-(41, 3, 12),
-(42, 3, 13),
-(43, 3, 14),
-(44, 3, 15),
-(45, 3, 18),
-(46, 3, 19),
-(47, 3, 22),
-(48, 3, 23),
-(49, 3, 25),
-(50, 4, 1),
-(51, 4, 2),
-(52, 4, 3),
-(53, 4, 4),
-(54, 4, 5),
-(55, 4, 7),
-(56, 4, 8),
-(57, 4, 9),
-(58, 4, 10),
-(59, 4, 11),
-(60, 4, 12),
-(61, 4, 13),
-(62, 4, 14),
-(63, 4, 16),
-(64, 4, 18),
-(65, 4, 19),
-(66, 4, 21),
-(67, 4, 22),
-(68, 4, 23),
-(69, 4, 24),
-(70, 4, 25),
-(71, 5, 1),
-(72, 5, 2),
-(73, 5, 3),
-(74, 5, 5),
-(75, 5, 7),
-(76, 5, 8),
-(77, 5, 13),
-(78, 5, 16),
-(79, 5, 17),
-(80, 5, 19),
-(81, 5, 20),
-(82, 5, 21),
-(83, 5, 22),
-(84, 5, 23),
-(85, 5, 24);
+INSERT INTO `permissions` (`category_id`, `staff_id`) VALUES
+(1, 1),
+(1, 2),
+(1, 4),
+(1, 6),
+(1, 7),
+(1, 8),
+(1, 10),
+(1, 11),
+(1, 14),
+(1, 15),
+(1, 16),
+(1, 18),
+(1, 19),
+(1, 20),
+(1, 21),
+(1, 22),
+(1, 23),
+(1, 24),
+(2, 3),
+(2, 4),
+(2, 5),
+(2, 6),
+(2, 8),
+(2, 9),
+(2, 11),
+(2, 13),
+(2, 14),
+(2, 16),
+(2, 18),
+(2, 19),
+(2, 23),
+(3, 1),
+(3, 2),
+(3, 4),
+(3, 5),
+(3, 6),
+(3, 8),
+(3, 9),
+(3, 10),
+(3, 11),
+(3, 12),
+(3, 13),
+(3, 14),
+(3, 15),
+(3, 18),
+(3, 19),
+(3, 22),
+(3, 23),
+(3, 25),
+(4, 1),
+(4, 2),
+(4, 3),
+(4, 4),
+(4, 5),
+(4, 7),
+(4, 8),
+(4, 9),
+(4, 10),
+(4, 11),
+(4, 12),
+(4, 13),
+(4, 14),
+(4, 16),
+(4, 18),
+(4, 19),
+(4, 21),
+(4, 22),
+(4, 23),
+(4, 24),
+(4, 25),
+(5, 1),
+(5, 2),
+(5, 3),
+(5, 5),
+(5, 7),
+(5, 8),
+(5, 13),
+(5, 16),
+(5, 17),
+(5, 19),
+(5, 20),
+(5, 21),
+(5, 22),
+(5, 23),
+(5, 24);
 
 -- --------------------------------------------------------
 
@@ -1113,9 +1109,9 @@ CREATE TABLE `roles` (
 --
 
 INSERT INTO `roles` (`role_id`, `role`, `description`, `created_at`, `archived`, `deleted_at`) VALUES
-(1, 'administrator', 'the administration of a business, organization, etc.', '2023-03-01 00:00:00', 0, NULL),
-(2, 'cabin attendants', 'The individual that attends to passenger\'s safety and comfort while in flight.', '2023-03-12 00:00:00', 0, NULL),
-(3, 'engineers', 'a person who designs, builds, or maintains engines, machines, or structures', '2023-04-01 00:00:00', 0, NULL),
+(1, 'administrator', 'the administration of a business', '2023-03-01 00:00:00', 0, NULL),
+(2, 'cabin attendants', 'The individual that attends to passengers safety and comfort while in flight.', '2023-03-12 00:00:00', 0, NULL),
+(3, 'engineers', 'a person who designs builds or maintains engines machines or structures', '2023-04-01 00:00:00', 0, NULL),
 (4, 'pilots', 'a person who operates the flying controls of an aircraft.', '2023-07-06 00:00:00', 0, NULL),
 (5, 'safety officer', 'the person who is responsible for the safety of the people who work or visit there.', '2023-03-01 00:00:00', 0, NULL),
 (6, 'bookkeeper', '', '2023-05-09 00:00:00', 1, '2023-11-18 00:00:00');
@@ -1240,7 +1236,7 @@ CREATE TABLE `subcategories` (
 --
 
 INSERT INTO `subcategories` (`subcategory_id`, `category_id`, `name`, `description`, `archived`, `deleted_at`) VALUES
-(1, 1, 'Aircraft approvals, certificates and documents', NULL, 0, NULL),
+(1, 1, 'Aircraft approvals - certificates and documents', NULL, 0, NULL),
 (2, 1, 'Aircraft manuals', NULL, 0, NULL),
 (3, 2, 'Audit program', NULL, 0, NULL),
 (4, 5, 'BCAA aircraft occurence reports', NULL, 0, NULL),
@@ -1264,9 +1260,9 @@ INSERT INTO `subcategories` (`subcategory_id`, `category_id`, `name`, `descripti
 --
 
 --
--- Indexes for table `aircrafts`
+-- Indexes for table `aircraft`
 --
-ALTER TABLE `aircrafts`
+ALTER TABLE `aircraft`
   ADD PRIMARY KEY (`aircraft_id`),
   ADD UNIQUE KEY `id_UNIQUE` (`aircraft_id`),
   ADD UNIQUE KEY `name_UNIQUE` (`name`);
@@ -1354,8 +1350,7 @@ ALTER TABLE `notifications`
 -- Indexes for table `permissions`
 --
 ALTER TABLE `permissions`
-  ADD PRIMARY KEY (`permission_id`),
-  ADD UNIQUE KEY `permission_id_UNIQUE` (`permission_id`),
+  ADD PRIMARY KEY (`category_id`,`staff_id`),
   ADD KEY `fk_permissions_categories1_idx` (`category_id`),
   ADD KEY `fk_permissions_staff1_idx` (`staff_id`);
 
@@ -1396,9 +1391,9 @@ ALTER TABLE `subcategories`
 --
 
 --
--- AUTO_INCREMENT for table `aircrafts`
+-- AUTO_INCREMENT for table `aircraft`
 --
-ALTER TABLE `aircrafts`
+ALTER TABLE `aircraft`
   MODIFY `aircraft_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
@@ -1420,16 +1415,16 @@ ALTER TABLE `notices`
   MODIFY `notice_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=41;
 
 --
--- AUTO_INCREMENT for table `permissions`
---
-ALTER TABLE `permissions`
-  MODIFY `permission_id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=86;
-
---
 -- AUTO_INCREMENT for table `roles`
 --
 ALTER TABLE `roles`
   MODIFY `role_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `staff`
+--
+ALTER TABLE `staff`
+  MODIFY `staff_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
 
 --
 -- AUTO_INCREMENT for table `subcategories`
@@ -1445,21 +1440,21 @@ ALTER TABLE `subcategories`
 -- Constraints for table `aircraft_documents`
 --
 ALTER TABLE `aircraft_documents`
-  ADD CONSTRAINT `fk_aircraft_documents_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_documents_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_aircraft_documents_documents1` FOREIGN KEY (`document_id`) REFERENCES `documents` (`document_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `aircraft_notices`
 --
 ALTER TABLE `aircraft_notices`
-  ADD CONSTRAINT `fk_aircraft_notices_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_notices_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_aircrafts_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `aircraft_staff`
 --
 ALTER TABLE `aircraft_staff`
-  ADD CONSTRAINT `fk_aircraft_crew_aircrafts1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircrafts` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_crew_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
   ADD CONSTRAINT `fk_aircraft_crew_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
