@@ -54,7 +54,7 @@ def post_method(body):
 
 def insert_and_get_document_id(cursor, body):
     file_name = body["file_name"]
-    email = body["email"]
+    email = body["author"]
     sub_category = body["subcategory"]
     if 'created_at' in body:
         created_at = body['created_at']

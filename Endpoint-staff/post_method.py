@@ -122,17 +122,17 @@ def get_category_ids_by_names(cursor, categories):
     return [row[0] for row in results]
 
 def insert_staff_roles(cursor, staff_id, role_ids):
-    query = "INSERT INTO staff_roles VALUES (%s, %s)"
+    query = "INSERT INTO staff_roles (`staff_id`, `role_id`) VALUES (%s, %s)"
     for role_id in role_ids:
         cursor.execute(query, (staff_id, role_id))
 
 def insert_staff_aircraft(cursor, staff_id, aircraft_ids):
-    query = "INSERT INTO aircraft_staff VALUES (%s, %s)"
+    query = "INSERT INTO aircraft_staff (`aircraft_id`, `staff_id`) VALUES (%s, %s)"
     for aircraft_id in aircraft_ids:
         cursor.execute(query, (aircraft_id, staff_id))
 
 def insert_permissions(cursor, staff_id, category_ids):
-    query = "INSERT INTO permissions VALUES (Null, %s, %s)"
+    query = "INSERT INTO permissions (`category_id`, `staff_id`) VALUES (Null, %s, %s)"
     for category_id in category_ids:
         cursor.execute(query, (category_id, staff_id))
 

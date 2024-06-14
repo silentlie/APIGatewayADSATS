@@ -39,10 +39,10 @@ def patch_method(body):
             insert_new_aircraft(cursor, staff_id, aircraft_ids )
             connection.commit()
             
-        if 'category' in body:
+        if 'categories' in body:
             delete_permission_value(cursor, staff_id)
             connection.commit()
-            category_ids = select_category_id(cursor,  body['category'])
+            category_ids = select_category_id(cursor,   body['categories'])
             insert_new_permissions(cursor, staff_id, category_ids)
             connection.commit()
 
@@ -173,7 +173,6 @@ def select_category_id(cursor, categories):
     category_ids = []
     for name in categories:
         cursor.execute(query, [name])
-        # name of aircrfats are unique
         result = cursor.fetchone()  
         if result:
             category_ids.append(result[0])  

@@ -175,13 +175,13 @@ def get_specific_staff(cursor, parameters):
         GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories,
         GROUP_CONCAT(DISTINCT sc.name SEPARATOR ', ') AS subcategories
     FROM staff AS s
-    JOIN aircraft_staff AS au
+    LEFT JOIN aircraft_staff AS au
     ON au.staff_id = s.staff_id
-    JOIN aircraft AS a
+    LEFT JOIN aircraft AS a
     ON a.aircraft_id = au.aircraft_id
-    JOIN staff_roles AS rs
+    LEFT JOIN staff_roles AS rs
     ON rs.staff_id = s.staff_id
-    JOIN roles AS r
+    LEFT JOIN roles AS r
     ON rs.role_id = r.role_id
     LEFT JOIN permissions AS p
     ON p.staff_id = s.staff_id
