@@ -4,6 +4,8 @@ import mysql.connector
 import os
 from datetime import datetime
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH'
+
 def patch_method(body):
     try:
         connection = mysql.connector.connect(
@@ -15,7 +17,7 @@ def patch_method(body):
         cursor = connection.cursor(dictionary=True)
         staff_id = body.get("staff_id", default=None)
         notice_id = body.get("notice_id", default=None)
-        status = body.get("archived", default=None)
+        status = body.get("status", default=None)
         read_at = datetime.now()
         query = """
             UPDATE staff
@@ -42,7 +44,7 @@ def patch_method(body):
             'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                'Access-Control-Allow-Methods': allowed_headers
             },
             'body': json.dumps(result)
         }

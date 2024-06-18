@@ -4,8 +4,6 @@ import json
 import datetime
 from mysql.connector import Error
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
 def delete_method(body):
     try:
         connection = mysql.connector.connect(
@@ -16,29 +14,27 @@ def delete_method(body):
         )
         cursor = connection.cursor()
 
-        document_id = body["document_id"]
+        notice_id = body["notice_id"]
 
-        if not document_id:
+        if not notice_id:
             return {
                 'statusCode': 400,
-                'headers': headers(),
-                'body': json.dumps("Invalid input: document_id must be provided")
+                'body': json.dumps("Invalid input: notice_id must be provided")
             }
 
         update_query = """
-            UPDATE documents
+            UPDATE notices 
             SET deleted_at = %s
-            WHERE document_id = %s
+            WHERE notice_id = %s;
         """
 
-        cursor.execute(update_query, (datetime.datetime.now(), document_id))
+        cursor.execute(update_query, (datetime.datetime.now(), notice_id))
         connection.commit()
 
     except Error as e:
         print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': headers(),
             'body': json.dumps("Internal server error")
         }
     finally:
@@ -50,15 +46,12 @@ def delete_method(body):
 
     return {
         'statusCode': 200,
-        'headers': headers(),
-        'body': json.dumps(document_id)
-    }
-
-## HELPERS ##
-# Response headers
-def headers():
-    return {
+        'headers': {
             'Access-Control-Allow-Headers': '*',
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        }
+            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+        },
+        'body': json.dumps(notice_id)
+    }
+
+

@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 12, 2024 at 02:46 AM
+-- Generation Time: Jun 17, 2024 at 03:59 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -16,6 +16,7 @@ SET time_zone = "+00:00";
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
 /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
 /*!40101 SET NAMES utf8mb4 */;
+
 
 -- -----------------------------------------------------
 -- Schema adsats_database
@@ -370,25 +371,23 @@ CREATE TABLE `hazard_details` (
   `review_date` date DEFAULT NULL,
   `review_likelihood` int(11) DEFAULT NULL,
   `review_severity` int(11) DEFAULT NULL,
-  `additional_comments` varchar(2000) DEFAULT NULL,
-  `register_updated` tinyint(4) UNSIGNED NOT NULL DEFAULT 0,
-  `pending_comments` varchar(2000) DEFAULT NULL
+  `register_updated` tinyint(4) UNSIGNED NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `hazard_details`
 --
 
-INSERT INTO `hazard_details` (`notice_id`, `description`, `hazard_location`, `report_type`, `include_mitigation`, `mitigation_comment`, `likelihood`, `severity`, `risk_severity`, `comments`, `review_date`, `review_likelihood`, `review_severity`, `additional_comments`, `register_updated`, `pending_comments`) VALUES
-(1, 'Curabitur nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 0, 'Curabitur nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 2, 2, 'B2', '', '2024-06-05', 2, 3, 'Emergency response plan needs updating', 1, NULL),
-(6, 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.', 'control tower', 'Confidential', 0, 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.', 3, 2, 'C2', 'Note: Pothole in the parking lot', '2023-10-25', 3, 2, 'Hazards are not clearly marked', 1, NULL),
-(11, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'hangar', 'Open', 0, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 1, 5, 'A5', 'keep away from heat sources.', '2023-08-28', 1, 4, 'Safety training is inadequate', 1, NULL),
-(12, 'Nam nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'taxiway', 'Confidential', 0, 'Nam nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 4, 4, 'D4', 'Watch out for the loose railing on the stairs.', '2023-07-16', 3, 4, 'Insufficient safety protocols in place', 1, NULL),
-(19, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 1, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 3, 5, 'C5', '', '2024-02-06', 3, 5, 'Insufficient safety protocols in place', 0, NULL),
-(21, 'Nulla nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 1, 'Nulla nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 4, 5, 'D5', 'Note: Pothole in the parking lot', '2024-03-19', 4, 5, 'Safety measures need to be improved', 1, 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.'),
-(22, 'Quisque nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'fueling station', 'Open', 0, 'Quisque nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 2, 2, 'B2', 'Attention: Faulty light fixture above', '2023-11-18', 2, 3, 'Safety training is inadequate', 1, NULL),
-(27, 'Lorem ipsum dolor sit amet', 'gate', 'Confidential', 1, 'Lorem ipsum dolor sit amet', 5, 3, 'E3', 'drive slowly.', '2023-08-02', 5, 3, 'Safety equipment is outdated', 1, NULL),
-(33, 'Proin auctor velit at libero tincidunt', 'baggage handling area', 'Open', 0, 'Proin auctor velit at libero tincidunt', 2, 4, 'B4', '', '2023-07-27', 2, 4, 'Safety training is inadequate', 0, NULL);
+INSERT INTO `hazard_details` (`notice_id`, `description`, `hazard_location`, `report_type`, `include_mitigation`, `mitigation_comment`, `likelihood`, `severity`, `risk_severity`, `comments`, `review_date`, `review_likelihood`, `review_severity`, `register_updated`) VALUES
+(1, 'Curabitur nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 0, 'Curabitur nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 2, 2, 'B2', '', '2024-06-05', 2, 3, 1),
+(6, 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.', 'control tower', 'Confidential', 0, 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.', 3, 2, 'C2', 'Note: Pothole in the parking lot', '2023-10-25', 3, 2, 1),
+(11, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'hangar', 'Open', 0, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 1, 5, 'A5', 'keep away from heat sources.', '2023-08-28', 1, 4, 1),
+(12, 'Nam nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'taxiway', 'Confidential', 0, 'Nam nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 4, 4, 'D4', 'Watch out for the loose railing on the stairs.', '2023-07-16', 3, 4, 1),
+(19, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 1, 'Phasellus nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 3, 5, 'C5', '', '2024-02-06', 3, 5, 0),
+(21, 'Nulla nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'maintenance area', 'Open', 1, 'Nulla nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 4, 5, 'D5', 'Note: Pothole in the parking lot', '2024-03-19', 4, 5, 1),
+(22, 'Quisque nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 'fueling station', 'Open', 0, 'Quisque nec justo nec justo ultricies ultricies. Sed nec justo nec justo ultricies ultricies.', 2, 2, 'B2', 'Attention: Faulty light fixture above', '2023-11-18', 2, 3, 1),
+(27, 'Lorem ipsum dolor sit amet', 'gate', 'Confidential', 1, 'Lorem ipsum dolor sit amet', 5, 3, 'E3', 'drive slowly.', '2023-08-02', 5, 3, 1),
+(33, 'Proin auctor velit at libero tincidunt', 'baggage handling area', 'Open', 0, 'Proin auctor velit at libero tincidunt', 2, 4, 'B4', '', '2023-07-27', 2, 4, 0);
 
 -- --------------------------------------------------------
 
@@ -408,54 +407,56 @@ CREATE TABLE `notices` (
   `deadline_at` datetime DEFAULT NULL,
   `archived` tinyint(3) UNSIGNED NOT NULL DEFAULT 0,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
-  `deleted_at` datetime DEFAULT NULL
+  `deleted_at` datetime DEFAULT NULL,
+  `pending_reason` varchar(2000) DEFAULT NULL,
+  `additional_comments` varchar(2000) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci;
 
 --
 -- Dumping data for table `notices`
 --
 
-INSERT INTO `notices` (`notice_id`, `author_id`, `category`, `subject`, `resolved`, `issued`, `lodged`, `notice_at`, `deadline_at`, `archived`, `created_at`, `deleted_at`) VALUES
-(1, 14, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 1, 0, 0, '2024-05-12 00:00:00', '2024-06-13 00:00:00', 0, '2024-05-14 00:00:00', NULL),
-(2, 19, 'Notice to crew', 'Crew memo: Reminder to update emergency contact information', 1, 0, 0, '2023-10-24 00:00:00', '2023-12-05 00:00:00', 0, '2023-11-05 00:00:00', NULL),
-(3, 3, 'Notice to crew', 'Crew notice: Reminder to wear proper PPE in the construction zone', 1, 0, 0, '2023-06-25 00:00:00', '2023-07-25 00:00:00', 0, '2023-06-25 00:00:00', NULL),
-(4, 20, 'Notice to crew', 'Crew memo: Reminder to update emergency contact information', 1, 0, 0, '2023-12-31 00:00:00', '2024-01-30 00:00:00', 1, '2023-12-31 00:00:00', '2024-04-13 00:00:00'),
-(5, 5, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-12-28 00:00:00', 0, '2023-11-28 00:00:00', NULL),
-(6, 14, 'Hazard report', 'Urgent: Hazard report in the break room regarding slippery floors', 1, 0, 0, '2023-09-26 00:00:00', '2023-10-26 00:00:00', 0, '2023-09-26 00:00:00', NULL),
-(7, 14, 'Notice to crew', 'Crew notification: Safety equipment inventory check', 1, 0, 0, '2023-05-29 00:00:00', '2023-06-28 00:00:00', 1, '2023-05-29 00:00:00', NULL),
-(8, 9, 'Notice to crew', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-05-20 00:00:00', '2023-07-20 00:00:00', 0, '2023-06-20 00:00:00', NULL),
-(9, 13, 'BCAA occurence report', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '0000-00-00 00:00:00', '2024-04-17 00:00:00', 0, '2024-03-18 00:00:00', NULL),
-(10, 14, 'Notice to crew', 'Crew update: Safety inspection results for the warehouse', 1, 0, 0, '2023-05-28 00:00:00', '2023-06-27 00:00:00', 0, '2023-05-28 00:00:00', NULL),
-(11, 23, 'Hazard report', 'Hazard report: Structural damage identified in the building', 1, 0, 0, '2023-08-11 00:00:00', '2023-09-10 00:00:00', 0, '2023-08-11 00:00:00', NULL),
-(12, 11, 'Hazard report', 'Hazard report: Biohazard contamination found in the restroom', 1, 0, 0, '2023-06-22 00:00:00', '2023-07-22 00:00:00', 1, '2023-06-22 00:00:00', '2024-04-25 00:00:00'),
-(13, 10, 'Notice to crew', 'Crew memo: Reminder to report any safety concerns immediately', 1, 0, 0, '2024-01-24 00:00:00', '2024-02-23 00:00:00', 0, '2024-01-24 00:00:00', NULL),
-(14, 7, 'Notice to crew', 'Important alert: Hazardous waste disposal procedures revised', 0, 0, 0, '2024-03-31 00:00:00', '2024-04-30 00:00:00', 0, '2024-03-31 00:00:00', NULL),
-(15, 24, 'Notice to crew', 'Crew notification: Scheduled maintenance for fire alarm system', 1, 0, 0, '2023-09-23 00:00:00', '2023-10-23 00:00:00', 0, '2023-09-23 00:00:00', NULL),
-(16, 12, 'Safety notice', 'Urgent notice: Hazardous materials spill in the laboratory', 1, 0, 0, '2023-10-15 00:00:00', '2023-11-14 00:00:00', 0, '2023-10-15 00:00:00', NULL),
-(17, 19, 'BCAA occurence report', 'Crew notification: Safety equipment inventory check', 1, 0, 0, '0000-00-00 00:00:00', '2023-12-11 00:00:00', 0, '2023-11-11 00:00:00', NULL),
-(18, 5, 'Notice to crew', 'Safety reminder: Proper lifting techniques to prevent injuries', 0, 0, 0, '2024-04-27 00:00:00', '2024-05-30 00:00:00', 1, '2024-04-30 00:00:00', '2024-05-03 00:00:00'),
-(19, 6, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 0, 0, 0, '2024-01-03 00:00:00', '2024-02-05 00:00:00', 0, '2024-01-06 00:00:00', NULL),
-(20, 15, 'BCAA occurence report', 'Safety reminder: Proper lifting techniques to prevent injuries', 1, 0, 0, '0000-00-00 00:00:00', '2023-11-14 00:00:00', 0, '2023-10-15 00:00:00', NULL),
-(21, 5, 'Hazard report', 'Urgent notice: Hazardous materials spill in the laboratory', 1, 0, 0, '2024-03-04 00:00:00', '2024-04-03 00:00:00', 0, '2024-03-04 00:00:00', NULL),
-(22, 18, 'Hazard report', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-10-02 00:00:00', '2023-11-01 00:00:00', 0, '2023-10-02 00:00:00', NULL),
-(23, 20, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-08-31 00:00:00', 1, '2023-08-01 00:00:00', NULL),
-(24, 7, 'BCAA occurence report', 'Safety reminder: Proper lifting techniques to prevent injuries', 1, 0, 0, '0000-00-00 00:00:00', '2024-03-02 00:00:00', 0, '2024-02-01 00:00:00', NULL),
-(25, 9, 'Notice to crew', 'Crew memo: Reminder to report any safety concerns immediately', 1, 0, 0, '2023-08-29 00:00:00', '2023-09-28 00:00:00', 0, '2023-08-29 00:00:00', NULL),
-(26, 4, 'BCAA occurence report', 'Safety notice: Slip and fall prevention tips for the office', 1, 0, 0, '0000-00-00 00:00:00', '2024-05-17 00:00:00', 0, '2024-04-17 00:00:00', NULL),
-(27, 2, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 1, 0, 0, '2023-07-01 00:00:00', '2023-08-04 00:00:00', 0, '2023-07-05 00:00:00', NULL),
-(28, 17, 'Safety notice', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '2023-12-16 00:00:00', '2024-01-15 00:00:00', 1, '2023-12-16 00:00:00', '2024-04-05 00:00:00'),
-(29, 18, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-08-25 00:00:00', 0, '2023-07-26 00:00:00', NULL),
-(30, 7, 'Notice to crew', 'Safety briefing: First aid training session announced', 1, 0, 0, '2024-01-24 00:00:00', '2024-02-23 00:00:00', 0, '2024-01-24 00:00:00', NULL),
-(31, 19, 'Notice to crew', 'Crew reminder: Lockout/tagout procedures must be followed', 1, 0, 0, '2023-08-17 00:00:00', '2023-09-16 00:00:00', 0, '2023-08-17 00:00:00', NULL),
-(32, 8, 'Notice to crew', 'Safety briefing: First aid training session announced', 1, 0, 0, '2023-08-14 00:00:00', '2023-09-28 00:00:00', 0, '2023-08-29 00:00:00', NULL),
-(33, 22, 'Hazard report', 'Hazard report: Water leak detected in the storage area', 0, 0, 0, '2023-06-07 00:00:00', '2023-07-07 00:00:00', 0, '2023-06-07 00:00:00', NULL),
-(34, 20, 'Safety notice', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '2024-05-15 00:00:00', '2024-06-14 00:00:00', 0, '2024-05-15 00:00:00', NULL),
-(35, 15, 'Notice to crew', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-07-10 00:00:00', '2023-08-09 00:00:00', 1, '2023-07-10 00:00:00', NULL),
-(36, 14, 'Safety notice', 'Safety notice: Ergonomic workstation setup guidelines', 1, 0, 0, '2023-07-03 00:00:00', '2023-08-24 00:00:00', 0, '2023-07-25 00:00:00', NULL),
-(37, 10, 'Notice to crew', 'Notice to crew: Equipment malfunction reported in the production area', 1, 0, 0, '2023-11-02 00:00:00', '2023-12-02 00:00:00', 0, '2023-11-02 00:00:00', NULL),
-(38, 8, 'Notice to crew', 'Important alert: Hazardous waste disposal procedures revised', 1, 0, 0, '2024-02-27 00:00:00', '2024-03-28 00:00:00', 0, '2024-02-27 00:00:00', NULL),
-(39, 21, 'Notice to crew', 'Safety reminder: Fire extinguisher inspection scheduled', 1, 0, 0, '2023-11-14 00:00:00', '2023-12-14 00:00:00', 0, '2023-11-14 00:00:00', NULL),
-(40, 14, 'Notice to crew', 'Crew notification: Scheduled maintenance for fire alarm system', 1, 0, 0, '2023-12-12 00:00:00', '2024-01-11 00:00:00', 0, '2023-12-12 00:00:00', NULL);
+INSERT INTO `notices` (`notice_id`, `author_id`, `category`, `subject`, `resolved`, `issued`, `lodged`, `notice_at`, `deadline_at`, `archived`, `created_at`, `deleted_at`, `pending_reason`, `additional_comments`) VALUES
+(1, 14, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 1, 0, 0, '2024-05-12 00:00:00', '2024-06-13 00:00:00', 0, '2024-05-14 00:00:00', NULL, 'Emergency response plan needs updating', NULL),
+(2, 19, 'Notice to crew', 'Crew memo: Reminder to update emergency contact information', 1, 0, 0, '2023-10-24 00:00:00', '2023-12-05 00:00:00', 0, '2023-11-05 00:00:00', NULL, NULL, NULL),
+(3, 3, 'Notice to crew', 'Crew notice: Reminder to wear proper PPE in the construction zone', 1, 0, 0, '2023-06-25 00:00:00', '2023-07-25 00:00:00', 0, '2023-06-25 00:00:00', NULL, NULL, NULL),
+(4, 20, 'Notice to crew', 'Crew memo: Reminder to update emergency contact information', 1, 0, 0, '2023-12-31 00:00:00', '2024-01-30 00:00:00', 1, '2023-12-31 00:00:00', '2024-04-13 00:00:00', NULL, NULL),
+(5, 5, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-12-28 00:00:00', 0, '2023-11-28 00:00:00', NULL, NULL, NULL),
+(6, 14, 'Hazard report', 'Urgent: Hazard report in the break room regarding slippery floors', 1, 0, 0, '2023-09-26 00:00:00', '2023-10-26 00:00:00', 0, '2023-09-26 00:00:00', NULL, 'Hazards are not clearly marked', NULL),
+(7, 14, 'Notice to crew', 'Crew notification: Safety equipment inventory check', 1, 0, 0, '2023-05-29 00:00:00', '2023-06-28 00:00:00', 1, '2023-05-29 00:00:00', NULL, NULL, NULL),
+(8, 9, 'Notice to crew', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-05-20 00:00:00', '2023-07-20 00:00:00', 0, '2023-06-20 00:00:00', NULL, NULL, NULL),
+(9, 13, 'BCAA occurence report', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '0000-00-00 00:00:00', '2024-04-17 00:00:00', 0, '2024-03-18 00:00:00', NULL, NULL, NULL),
+(10, 14, 'Notice to crew', 'Crew update: Safety inspection results for the warehouse', 1, 0, 0, '2023-05-28 00:00:00', '2023-06-27 00:00:00', 0, '2023-05-28 00:00:00', NULL, NULL, NULL),
+(11, 23, 'Hazard report', 'Hazard report: Structural damage identified in the building', 1, 0, 0, '2023-08-11 00:00:00', '2023-09-10 00:00:00', 0, '2023-08-11 00:00:00', NULL, 'Safety training is inadequate', NULL),
+(12, 11, 'Hazard report', 'Hazard report: Biohazard contamination found in the restroom', 1, 0, 0, '2023-06-22 00:00:00', '2023-07-22 00:00:00', 1, '2023-06-22 00:00:00', '2024-04-25 00:00:00', 'Insufficient safety protocols in place', NULL),
+(13, 10, 'Notice to crew', 'Crew memo: Reminder to report any safety concerns immediately', 1, 0, 0, '2024-01-24 00:00:00', '2024-02-23 00:00:00', 0, '2024-01-24 00:00:00', NULL, NULL, NULL),
+(14, 7, 'Notice to crew', 'Important alert: Hazardous waste disposal procedures revised', 0, 0, 0, '2024-03-31 00:00:00', '2024-04-30 00:00:00', 0, '2024-03-31 00:00:00', NULL, NULL, NULL),
+(15, 24, 'Notice to crew', 'Crew notification: Scheduled maintenance for fire alarm system', 1, 0, 0, '2023-09-23 00:00:00', '2023-10-23 00:00:00', 0, '2023-09-23 00:00:00', NULL, NULL, NULL),
+(16, 12, 'Safety notice', 'Urgent notice: Hazardous materials spill in the laboratory', 1, 0, 0, '2023-10-15 00:00:00', '2023-11-14 00:00:00', 0, '2023-10-15 00:00:00', NULL, NULL, NULL),
+(17, 19, 'BCAA occurence report', 'Crew notification: Safety equipment inventory check', 1, 0, 0, '0000-00-00 00:00:00', '2023-12-11 00:00:00', 0, '2023-11-11 00:00:00', NULL, NULL, NULL),
+(18, 5, 'Notice to crew', 'Safety reminder: Proper lifting techniques to prevent injuries', 0, 0, 0, '2024-04-27 00:00:00', '2024-05-30 00:00:00', 1, '2024-04-30 00:00:00', '2024-05-03 00:00:00', NULL, NULL),
+(19, 6, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 0, 0, 0, '2024-01-03 00:00:00', '2024-02-05 00:00:00', 0, '2024-01-06 00:00:00', NULL, 'Insufficient safety protocols in place', NULL),
+(20, 15, 'BCAA occurence report', 'Safety reminder: Proper lifting techniques to prevent injuries', 1, 0, 0, '0000-00-00 00:00:00', '2023-11-14 00:00:00', 0, '2023-10-15 00:00:00', NULL, NULL, NULL),
+(21, 5, 'Hazard report', 'Urgent notice: Hazardous materials spill in the laboratory', 1, 0, 0, '2024-03-04 00:00:00', '2024-04-03 00:00:00', 0, '2024-03-04 00:00:00', NULL, 'Safety measures need to be improved', 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Integer nec purus vel nisi ultrices ultricies.'),
+(22, 18, 'Hazard report', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-10-02 00:00:00', '2023-11-01 00:00:00', 0, '2023-10-02 00:00:00', NULL, 'Safety training is inadequate', NULL),
+(23, 20, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-08-31 00:00:00', 1, '2023-08-01 00:00:00', NULL, NULL, NULL),
+(24, 7, 'BCAA occurence report', 'Safety reminder: Proper lifting techniques to prevent injuries', 1, 0, 0, '0000-00-00 00:00:00', '2024-03-02 00:00:00', 0, '2024-02-01 00:00:00', NULL, NULL, NULL),
+(25, 9, 'Notice to crew', 'Crew memo: Reminder to report any safety concerns immediately', 1, 0, 0, '2023-08-29 00:00:00', '2023-09-28 00:00:00', 0, '2023-08-29 00:00:00', NULL, NULL, NULL),
+(26, 4, 'BCAA occurence report', 'Safety notice: Slip and fall prevention tips for the office', 1, 0, 0, '0000-00-00 00:00:00', '2024-05-17 00:00:00', 0, '2024-04-17 00:00:00', NULL, NULL, NULL),
+(27, 2, 'Hazard report', 'Hazard report: Mold growth detected in the basement', 1, 0, 0, '2023-07-01 00:00:00', '2023-08-04 00:00:00', 0, '2023-07-05 00:00:00', NULL, 'Safety equipment is outdated', NULL),
+(28, 17, 'Safety notice', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '2023-12-16 00:00:00', '2024-01-15 00:00:00', 1, '2023-12-16 00:00:00', '2024-04-05 00:00:00', NULL, NULL),
+(29, 18, 'BCAA occurence report', 'Safety alert: Severe weather warning for the area', 1, 0, 0, '0000-00-00 00:00:00', '2023-08-25 00:00:00', 0, '2023-07-26 00:00:00', NULL, NULL, NULL),
+(30, 7, 'Notice to crew', 'Safety briefing: First aid training session announced', 1, 0, 0, '2024-01-24 00:00:00', '2024-02-23 00:00:00', 0, '2024-01-24 00:00:00', NULL, NULL, NULL),
+(31, 19, 'Notice to crew', 'Crew reminder: Lockout/tagout procedures must be followed', 1, 0, 0, '2023-08-17 00:00:00', '2023-09-16 00:00:00', 0, '2023-08-17 00:00:00', NULL, NULL, NULL),
+(32, 8, 'Notice to crew', 'Safety briefing: First aid training session announced', 1, 0, 0, '2023-08-14 00:00:00', '2023-09-28 00:00:00', 0, '2023-08-29 00:00:00', NULL, NULL, NULL),
+(33, 22, 'Hazard report', 'Hazard report: Water leak detected in the storage area', 0, 0, 0, '2023-06-07 00:00:00', '2023-07-07 00:00:00', 0, '2023-06-07 00:00:00', NULL, 'Safety training is inadequate', NULL),
+(34, 20, 'Safety notice', 'Safety notice: Slippery surface warning in the cafeteria', 1, 0, 0, '2024-05-15 00:00:00', '2024-06-14 00:00:00', 0, '2024-05-15 00:00:00', NULL, NULL, NULL),
+(35, 15, 'Notice to crew', 'Urgent notice: Hazardous spill containment measures initiated', 1, 0, 0, '2023-07-10 00:00:00', '2023-08-09 00:00:00', 1, '2023-07-10 00:00:00', NULL, NULL, NULL),
+(36, 14, 'Safety notice', 'Safety notice: Ergonomic workstation setup guidelines', 1, 0, 0, '2023-07-03 00:00:00', '2023-08-24 00:00:00', 0, '2023-07-25 00:00:00', NULL, NULL, NULL),
+(37, 10, 'Notice to crew', 'Notice to crew: Equipment malfunction reported in the production area', 1, 0, 0, '2023-11-02 00:00:00', '2023-12-02 00:00:00', 0, '2023-11-02 00:00:00', NULL, NULL, NULL),
+(38, 8, 'Notice to crew', 'Important alert: Hazardous waste disposal procedures revised', 1, 0, 0, '2024-02-27 00:00:00', '2024-03-28 00:00:00', 0, '2024-02-27 00:00:00', NULL, NULL, NULL),
+(39, 21, 'Notice to crew', 'Safety reminder: Fire extinguisher inspection scheduled', 1, 0, 0, '2023-11-14 00:00:00', '2023-12-14 00:00:00', 0, '2023-11-14 00:00:00', NULL, NULL, NULL),
+(40, 14, 'Notice to crew', 'Crew notification: Scheduled maintenance for fire alarm system', 1, 0, 0, '2023-12-12 00:00:00', '2024-01-11 00:00:00', 0, '2023-12-12 00:00:00', NULL, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -1161,7 +1162,8 @@ INSERT INTO `staff` (`staff_id`, `f_name`, `l_name`, `email`, `archived`, `creat
 (22, 'Niles', 'Detloff', 'ndetloffl@slideshare.net', 1, '2024-01-09 00:00:00', NULL),
 (23, 'Chaddy', 'Wildin', 'cwildinm@etsy.com', 0, '2023-09-08 00:00:00', NULL),
 (24, 'Dulcea', 'Vernham', 'dvernhamn@yellowpages.com', 1, '2023-05-27 00:00:00', NULL),
-(25, 'Friedrich', 'O\'Regan', 'foregano@rakuten.co.jp', 1, '2024-02-26 00:00:00', NULL);
+(25, 'Friedrich', 'O\'Regan', 'foregano@rakuten.co.jp', 1, '2024-02-26 00:00:00', NULL),
+(26, 'Student', 'Example', 'student@example.com', 0, '2024-06-17 23:57:38', NULL);
 
 -- --------------------------------------------------------
 
@@ -1273,7 +1275,7 @@ ALTER TABLE `aircraft`
 ALTER TABLE `aircraft_documents`
   ADD PRIMARY KEY (`aircraft_id`,`document_id`),
   ADD KEY `fk_aircraft_documents_documents1_idx` (`document_id`),
-  ADD KEY `fk_aircraft_documents_aircraft1_idx` (`aircraft_id`);
+  ADD KEY `fk_aircraft_documents_aircrafts1_idx` (`aircraft_id`);
 
 --
 -- Indexes for table `aircraft_notices`
@@ -1281,15 +1283,15 @@ ALTER TABLE `aircraft_documents`
 ALTER TABLE `aircraft_notices`
   ADD PRIMARY KEY (`aircraft_id`,`notice_id`),
   ADD KEY `fk_aircraft_notices_notices1_idx` (`notice_id`) USING BTREE,
-  ADD KEY `fk_aircraft_notices_aircraft1_idx` (`aircraft_id`) USING BTREE;
+  ADD KEY `fk_aircraft_notices_aircrafts1_idx` (`aircraft_id`) USING BTREE;
 
 --
 -- Indexes for table `aircraft_staff`
 --
 ALTER TABLE `aircraft_staff`
   ADD PRIMARY KEY (`aircraft_id`,`staff_id`),
-  ADD KEY `fk_aircraft_staff_staff1_idx` (`staff_id`) USING BTREE,
-  ADD KEY `fk_aircraft_staff_aircraft1_idx` (`aircraft_id`) USING BTREE;
+  ADD KEY `fk_aircraft_crew_staff1_idx` (`staff_id`) USING BTREE,
+  ADD KEY `fk_aircraft_crew_aircrafts1_idx` (`aircraft_id`) USING BTREE;
 
 --
 -- Indexes for table `categories`
@@ -1424,7 +1426,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `staff`
 --
 ALTER TABLE `staff`
-  MODIFY `staff_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=26;
+  MODIFY `staff_id` int(11) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- AUTO_INCREMENT for table `subcategories`
@@ -1448,14 +1450,14 @@ ALTER TABLE `aircraft_documents`
 --
 ALTER TABLE `aircraft_notices`
   ADD CONSTRAINT `fk_aircraft_notices_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aircraft_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_aircrafts_notices_notices1` FOREIGN KEY (`notice_id`) REFERENCES `notices` (`notice_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `aircraft_staff`
 --
 ALTER TABLE `aircraft_staff`
-  ADD CONSTRAINT `fk_aircraft_staff_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
-  ADD CONSTRAINT `fk_aircraft_staff_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_aircraft_crew_aircraft1` FOREIGN KEY (`aircraft_id`) REFERENCES `aircraft` (`aircraft_id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_aircraft_crew_staff1` FOREIGN KEY (`staff_id`) REFERENCES `staff` (`staff_id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
 -- Constraints for table `documents`

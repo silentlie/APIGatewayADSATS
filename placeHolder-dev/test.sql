@@ -1,1 +1,1 @@
-SELECT * FROM staff_roles WHERE staff_id = 0;
+SELECT * FROM documents WHERE document_id = 101

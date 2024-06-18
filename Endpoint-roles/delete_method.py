@@ -15,6 +15,16 @@ def delete_method(body):
         cursor = connection.cursor()
 
         role_id = body.get("role_id")
+        if role_id != 1 and role_id !=2 :
+            return {
+                'statusCode': 409,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+                'body': json.dumps({"error": "Action not authorised "})
+            }
 
         if not role_id:
             return {

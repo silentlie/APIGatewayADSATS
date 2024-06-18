@@ -3,6 +3,9 @@ import json
 from mysql.connector import Error
 import mysql.connector
 import os
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 # I've refactor the code so it look a little different
 def get_method(parameters):
     try:
@@ -37,11 +40,7 @@ def get_method(parameters):
         }
         return {
             'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
   
@@ -50,11 +49,7 @@ def get_method(parameters):
         
         return {
             'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(e._full_msg)
         }
         
@@ -211,7 +206,8 @@ def limit_query(parameters):
     nested_query += " GROUP BY d.document_id "
     return nested_query, params
 
-# create a connect to db
+## HELPERS ##
+# Create a connection to db
 def connect_to_db():
     return mysql.connector.connect(
         host=os.environ.get('HOST'),
@@ -219,6 +215,14 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
+
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):

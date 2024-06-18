@@ -1,115 +1,111 @@
-import datetime
+from datetime import datetime, timedelta
 import json
 from mysql.connector import Error
 import mysql.connector
 import os
 
-# Endpoint > /notices/notice-to-crew
-# This will create a new notice record
-# Then will create a new notice_details record
+allowed_headers = 'OPTIONS,GET,POST'
 
 def post_method(body):
     try:
         connection = mysql.connector.connect(
-            host= os.environ.get('HOST'),
-            user= os.environ.get('USER'),
-            password= os.environ.get('PASSWORD'),
-            database= "adsats_database",
+            host=os.environ.get('HOST'),
+            user=os.environ.get('USER'),
+            password=os.environ.get('PASSWORD'),
+            database="adsats_database",
         )
+
         cursor = connection.cursor()
-        staff_id = insert_and_get_staff_id(cursor, body)
-        connection.commit()
 
-        if 'emails' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
-            insert_staff_aircraft(cursor, staff_id, aircraft_ids)
+        # Notice will have already been created. This endpoint will pass in the notice_id via the body
+        # This endpoint will create the notice_details record
+        # 'Notice to crew' notices do not require any further review - this endpoint will also update the
+        #   resolved field (in notices table) to 1 (true)
+
+        if 'notice_id' in body:
+            cursor = connection.cursor(dictionary=True)
+            notice_id = body['notice_id']
+
+            # If a message has been passed create a new notice_details record
+            if 'message' in body:
+                insert_notice_details(cursor, body, notice_id)
+
+            # Update notice 'resolved' field to 1 (true) to confirm notifications have been sent out.
+            update_resolved(cursor, notice_id)
+
+            # Complete the commit only after all transactions have been successfully excecuted
+            # Commit changes to the database
             connection.commit()
+
+            # Print and return successful request message
+            print("Database updated.")
+            return {
+                'statusCode': 200,
+                'headers': headers(),
+                'body': json.dumps(notice_id)
+            }
         
-        if 'roles' in body:
-            role_ids = get_role_ids_by_names(cursor, body['roles'])
-            insert_staff_roles(cursor, staff_id, role_ids)
-            connection.commit()
-
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(staff_id, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
+        # If notice_id is not in the request body return a bad request error
+        else:
+            return {
+                'statusCode': 400,
+                'headers': headers(),
+                'body': json.dumps('Missing parameter: "notice_id" not found')
+            }
   
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        
-        return {
-            'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-        
+    except mysql.connector.Error as e:
+        # Update failed message as an error
+        print(f"Database update failed: {e}")
+        # Reverting changes because of exception
+        connection.rollback()
+        return server_error(e)
+
+    except Exception as e:
+        print(f"Error: {e}")
+        return server_error(e)
+
     finally:
-        if cursor is not None:
+        # Close the cursor
+        if cursor:
             cursor.close()
+
+        # Close the database connection
         if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
-def insert_and_get_staff_id(cursor, body):
-    # required
-    f_name = body["f_name"]
-    # required
-    l_name = body["l_name"]
-    # required
-    email = body["email"]
-    # required
-    archived = body["archived"]
-    # TODO:need to check if email is exist
-
-    query = """
-    INSERT INTO staff (f_name, l_name, email, archived, created_at, deleted_at) VALUES (%s, %s, %s, %s, %s, Null)
-    """
-    params = [f_name, l_name, email, archived, datetime.datetime.now()]
+## Insert/update table records ##
+# Create linked notice_detail record
+def insert_notice_details(cursor, body, notice_id):
+    message = body['message']
+    query = "INSERT INTO notice_details (notice_id, message) VALUES (%s, %s)"
+    params = [notice_id, message]
     cursor.execute(query, params)
-    
-    query = "SELECT staff_id FROM staff WHERE email = %s"
-    cursor.execute(query, (email,))
-    result = cursor.fetchone()
-    print(result)
-    return result[0]
 
-def get_role_ids_by_names(cursor, roles):
-    format_strings = ','.join(['%s'] * len(roles))
-    query = f"SELECT role_id FROM roles WHERE role IN ({format_strings})"
-    cursor.execute(query, tuple(roles))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+# Update resolved field (in Notices table) to TRUE
+def update_resolved(cursor, notice_id):
+    resolved = 1
+    query = """
+        UPDATE notices
+        SET resolved = %s
+        WHERE notice_id = %s
+    """
+    params = [resolved, notice_id]
+    cursor.execute(query, params)
 
-def get_aircraft_ids_by_names(cursor, aircraft):
-    format_strings = ','.join(['%s'] * len(aircraft))
-    query = f"SELECT aircraft_id FROM aircraft WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(aircraft))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+## HELPERS ##
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }
 
-def insert_staff_roles(cursor, staff_id, role_ids):
-    query = "INSERT INTO staff_roles VALUES (%s, %s)"
-    for role_id in role_ids:
-        cursor.execute(query, (staff_id, role_id))
-
-def insert_staff_aircraft(cursor, staff_id, aircraft_ids):
-    query = "INSERT INTO aircraft_crew VALUES (%s, %s)"
-    for aircraft_id in aircraft_ids:
-        cursor.execute(query, (aircraft_id, staff_id))
-
-# for dump json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+# Return server error as response
+def server_error(e):
+    return {
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(str(e))
+        }

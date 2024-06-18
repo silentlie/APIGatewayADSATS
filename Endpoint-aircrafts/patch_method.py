@@ -7,13 +7,7 @@ def patch_method(body):
     connection = None
     cursor = None
     try:
-        # # Validate input body
-        # required_fields = ['aircraft_id']
-        # for field in required_fields:
-        #     if field not in body:
-        #         raise ValueError(f"Missing required field: {field}")
-
-        # Connect to MySQL database
+       
         connection = mysql.connector.connect(
             host=os.environ.get('HOST'),
             user=os.environ.get('USER'),
@@ -49,7 +43,7 @@ def patch_method(body):
                 'Access-Control-Allow-Origin': '*',
                 'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
             },
-            'body': json.dumps({aircraft_id})
+            'body': json.dumps( aircraft_id)
         }
 
     except ValueError as ve:
@@ -82,11 +76,11 @@ def patch_method(body):
             print("MySQL connection is closed")
 
 def update_aircraft(cursor, body, aircraft_id):
-    name = body.get("name")
+    name = body["name"]
 
     if name is not None:
         update_query = """
-            UPDATE aircrafts
+            UPDATE aircraft
             SET name = %s
             WHERE aircraft_id = %s
         """
@@ -95,7 +89,7 @@ def update_aircraft(cursor, body, aircraft_id):
 
 def update_archived_value(cursor, aircraft_id, archived):
     update_query = """
-        UPDATE aircrafts 
+        UPDATE aircraft
         SET archived = %s
         WHERE aircraft_id = %s
     """

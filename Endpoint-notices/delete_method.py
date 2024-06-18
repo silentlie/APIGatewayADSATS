@@ -4,6 +4,8 @@ import json
 import datetime
 from mysql.connector import Error
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def delete_method(body):
     try:
         connection = mysql.connector.connect(
@@ -49,7 +51,7 @@ def delete_method(body):
         'headers': {
             'Access-Control-Allow-Headers': '*',
             'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+            'Access-Control-Allow-Methods': allowed_headers
         },
         'body': json.dumps(notice_id)
     }

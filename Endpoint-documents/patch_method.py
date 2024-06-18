@@ -3,6 +3,8 @@ import os
 import json
 from mysql.connector import Error
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def patch_method(body):
     connection = None
     cursor = None
@@ -45,11 +47,7 @@ def patch_method(body):
 
     return {
         'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
+        'headers': headers(),
         'body': json.dumps(document_id)
     }
 
@@ -124,3 +122,12 @@ def insert_aircraft_document(cursor, document_id, aircraft_ids):
     for id in aircraft_ids:
         params = (document_id, id)
         cursor.execute(insert_query, params)
+
+## HELPERS ##
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }

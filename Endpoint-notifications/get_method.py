@@ -5,11 +5,14 @@ from mysql.connector import Error
 import mysql.connector
 import os
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH'
+
 def get_method(parameters):
     try:
         connection = connect_to_db()
         query, params = build_query(parameters)
         cursor = connection.cursor(dictionary=True)
+
         query += " LIMIT %s OFFSET %s"
         limit = int(parameters["limit"])
         offset = int(parameters["offset"])
@@ -18,10 +21,12 @@ def get_method(parameters):
         cursor.execute(query, params)
         rows = cursor.fetchall()
 
+        # Original: SUM(CASE WHEN n.deadline_at < NOW() THEN 1 ELSE 0 END) AS overdue
+        # Modified by Carole 16/06 to have overdue items being those that are past due date and unread
         unread_query = """
         SELECT 
             SUM(CASE WHEN nf.status = 0 THEN 1 ELSE 0 END) AS unread,
-            SUM(CASE WHEN n.deadline_at < NOW() THEN 1 ELSE 0 END) AS overdue
+            SUM(CASE WHEN nf.status = 0 AND n.deadline_at < NOW() THEN 1 ELSE 0 END) AS overdue
         FROM notifications AS nf
         JOIN notices AS n 
         ON nf.notice_id = n.notice_id
@@ -41,11 +46,7 @@ def get_method(parameters):
 
         return {
             'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
   
@@ -54,11 +55,7 @@ def get_method(parameters):
         
         return {
             'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(e._full_msg)
         }
         
@@ -93,6 +90,15 @@ def build_query(parameters):
     print(query)
     print(params)
     return query, params
+
+## HELPERS ##
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }
 
 def connect_to_db():
     return mysql.connector.connect(

@@ -1,82 +1,130 @@
-from mysql.connector import Error
 import mysql.connector
 import os
+import json
+from mysql.connector import Error
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def patch_method(body):
+    connection = None
+    cursor = None
     try:
+        # Validate input
+        notice_id = body.get('notice_id')
+        if not notice_id:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({"error": "Invalid input: notice_id must be provided"})
+            }
+
+        # Establish connection
         connection = mysql.connector.connect(
-            host= os.environ.get('HOST'),
-            user= os.environ.get('USER'),
-            password= os.environ.get('PASSWORD'),
-            database= "adsats_database",
+            host=os.environ.get('HOST'),
+            user=os.environ.get('USER'),
+            password=os.environ.get('PASSWORD'),
+            database="adsats_database"
         )
         cursor = connection.cursor()
-        name = body.get("name", default=None)
-        emails = body.get("emails", default=None).split(',')
-        time_range = body.get("timeRange", default=None).split(',')
-        archived = body.get("archived", default=None)
-        aircraft = body.get("aircraft", default=None).split(',')
-        column_name = body.get("clumnName", default=None)
-        asc = body.get("asc", default=None)
-        limit = body.get("limit")
-        offset = body.get("offset")
-        query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') 
-        FROM documents AS d
-        JOIN users AS u ON d.uploaded_by_id = u.user_id
-        JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
-        JOIN aircraft_documents AS ad ON ad.documents_id = d.document_id
-        JOIN aircraft AS a ON ad.aircraft_id = a.aircraft_id
-        """
-        conditions = []
-        params = []
-        if name is not None:
-            conditions.append("d.file_name = %s")
-            params.append(name)
-        if emails is not None:
-            placeholders = ', '.join(['%s'] * len(emails))
-            conditions.append(f"u.emails IN ({placeholders})")
-            params.extend(emails)
-        if time_range is not None:
-            conditions.append("d.created_at BETWEEN %s AND %s")
-            params.extend(time_range)
-        if archived is not None:
-            conditions.append("d.archived = %s")
-            params.append(archived)
-        if aircraft is not None:
-            placeholders = ', '.join(['%s'] * len(aircraft))
-            conditions.append(f"ad.aircraft_id IN ({placeholders})")
-        if conditions:
-            query += " WHERE " + " AND ".join(conditions)
-        if column_name is not None:
-            query += "ORDER BY d.%s %s"
-            params.append(column_name)
-            if asc:
-                params.append('ASC')
-            else:
-                params.append('DESC')
-        query += "LIMIT %s OFFSET %s"
-        params.extend([limit, offset])
-        
-        cursor.execute(query, params)
-        results = cursor.fetchall()
-        for row in results:
-            # need to convert to a list of dict/json
-            print(row)
-    except Error as e:
+
+        # Update archived status if provided
+        if 'archived' in body:
+            update_archived_value(cursor, notice_id, body['archived'])
+
+        # Update notice details if provided
+        if 'staff' in body or 'category' in body or 'subject' in body:
+            update_notice(cursor, body, notice_id)
+
+        # Complete the commit only after all transactions have been successfully excecuted
+        # Commit changes to the database
+        connection.commit()
+
+        # Update successful message
+        print("Database updated.")
+
+        return {
+            'statusCode': 200,
+            'headers': headers(),
+            'body': json.dumps({"notice_id": notice_id})
+        }
+    except mysql.connector.Error as e:
+        # Update failed message as an error
+        print(f"Database update failed: {e}")
+        # Reverting changes because of exception
+        connection.rollback()
+        return server_error(e)
+
+    except Exception as e:
         print(f"Error: {e}")
+        return server_error(e)
+
     finally:
-        if connection.is_connected():
+        # Close the cursor
+        if cursor:
             cursor.close()
+
+        # Close the database connection
+        if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
+def update_notice(cursor, body, notice_id):
+    category = body.get('category')
+    subject = body.get('subject')
+    staff = body.get('staff')
+
+    update_fields = []
+    params = []
+
+    if category:
+        update_fields.append("category = %s")
+        params.append(category)
+
+    if subject:
+        update_fields.append("subject = %s")
+        params.append(subject)
+
+    if staff:
+        query = """SELECT staff_id FROM staff WHERE email = %s"""
+        cursor.execute(query, (staff,))
+        author_id = cursor.fetchone()
+        if author_id:
+            update_fields.append("author_id = %s")
+            params.append(author_id[0])
+
+    if not update_fields:
+        return
+
+    update_query = f"""
+        UPDATE notices
+        SET {', '.join(update_fields)}
+        WHERE notice_id = %s
+    """
+    params.append(notice_id)
+    cursor.execute(update_query, params)
+
+def update_archived_value(cursor, notice_id, archived):
+    query = """
+        UPDATE notices 
+        SET archived = %s
+        WHERE notice_id = %s
+    """
+    params = [archived, notice_id]
+    cursor.execute(query, params)
+    print(f"Updated archived status to {archived} for notice ID: {notice_id}")
+
+## HELPERS ##
+# Return server error as response
+def server_error(e):
     return {
-        'statusCode': 200,
-        'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-        # this suppose to return all rows
-        'body': "Succeed"
-    }
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(str(e))
+        }
+
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }

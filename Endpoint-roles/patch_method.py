@@ -16,7 +16,17 @@ def patch_method(body):
         cursor = connection.cursor()
         
         role_id = body['role_id']
-        
+        if role_id != 1 and role_id !=2 :
+            return {
+                'statusCode': 409,
+                'headers': {
+                    'Access-Control-Allow-Headers': '*',
+                    'Access-Control-Allow-Origin': '*',
+                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                },
+                'body': json.dumps({"error": "Action not authorised "})
+            }
+
         if 'archived' in body:
             update_archived_value(cursor, role_id, body['archived'])
             connection.commit()
@@ -61,8 +71,8 @@ def patch_method(body):
     
 
 def update_role(cursor, body, role_id):
-    role = body.get("role", None)
-    description = body.get("description", None)
+    role = body["role"]
+    description = body["description"]
     
     update_fields = []
     params = []

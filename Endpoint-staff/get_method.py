@@ -153,7 +153,7 @@ def get_method_no_parameters():
     except Error as e:
         print(f"Error: {e._full_msg}")
         return {
-            'statusCode': 200,
+            'statusCode': 500,
             'headers': {
                     'Access-Control-Allow-Headers': '*',
                     'Access-Control-Allow-Origin': '*',

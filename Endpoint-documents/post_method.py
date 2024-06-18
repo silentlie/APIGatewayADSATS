@@ -4,6 +4,8 @@ import mysql.connector
 import os
 from datetime import datetime
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def post_method(body):
     try:
         connection = mysql.connector.connect(
@@ -12,83 +14,98 @@ def post_method(body):
             password=os.environ.get('PASSWORD'),
             database="adsats_database",
         )
-        cursor = connection.cursor()
-        document_id = insert_and_get_document_id(cursor, body)
-        connection.commit()
 
-        # aircraft_document
-        if 'aircraft' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
-            insert_aircraft_document(cursor, document_id, aircraft_ids)
+        if 'file_name' in body and 'author' in body and 'subcategory' in body:
+
+            cursor = connection.cursor()
+
+            # Insert the new document record
+            document_id = insert_and_get_document_id(cursor, body)
+
+            # Insert linked aircraft_document table records if 1 or more aircraft have been selected
+            if 'aircraft' in body:
+                aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
+                insert_aircraft_document(cursor, document_id, aircraft_ids)
+            
+            
+            # Complete the commit only after all transactions have been successfully excecuted
+            # Commit changes to the database
             connection.commit()
 
+            # Update successful message
+            print("Database updated.")
+
+            return {
+                'statusCode': 200,
+                'headers': headers(),
+                'body': json.dumps(document_id)
+            }
+
         return {
-            'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps(document_id)
+            'statusCode': 400,
+                'headers': headers(),
+                'body': json.dumps('Missing body parameters: Request must include file_name, author, subcategory')
         }
 
-    except Error as e:
+    except mysql.connector.Error as e:
+        # Update failed message as an error
+        print(f"Database update failed: {e}")
+
+        # Reverting changes because of exception
+        connection.rollback()
+        return server_error(e)
+
+    except Exception as e:
         print(f"Error: {e}")
-        
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps(f"Error: {e}")
-        }
+        return server_error(e)
         
     finally:
-        if cursor is not None:
+        # Close the cursor
+        if cursor:
             cursor.close()
+
+        # Close the database connection
         if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
-
+ 
+# Insert document record
 def insert_and_get_document_id(cursor, body):
     file_name = body["file_name"]
-    email = body["author"]
-    sub_category = body["subcategory"]
-    if 'created_at' in body:
-        created_at = body['created_at']
-    else:
-        created_at = datetime.now()
-    archived = body["archived"]
+    created_at = body['created_at'] if 'created_at' in body else datetime.now()
+    archived = 1 if body["archived"] else 0
+    author_id = get_author_id(cursor, body["author"])
+    subcategory_id = get_subcategory_id(cursor, body["subcategory"])
 
-    select_id = """SELECT staff_id FROM staff WHERE email = %s"""
-    cursor.execute(select_id, (email,))
-    author_id = cursor.fetchone()
-    
-    if not author_id:
-        raise ValueError(f"No staff found with email {email}")
-    author_id = author_id[0]
-
-    sub_category_id_query = """SELECT subcategory_id FROM subcategories WHERE name = %s"""  
-    cursor.execute(sub_category_id_query, (sub_category,))
-    sub_category_id = cursor.fetchone()
-    
-    if not sub_category_id:
-        raise ValueError(f"No subcategory found with name {sub_category}")
-    sub_category_id = sub_category_id[0]
-
+    # SQL query
     query = """
         INSERT INTO documents 
             (author_id, subcategory_id, file_name, archived, created_at)
         VALUES (%s, %s, %s, %s, %s)
     """
-    params = [author_id, sub_category_id, file_name, archived, created_at]
+    params = [author_id, subcategory_id, file_name, archived, created_at]
     cursor.execute(query, params)
+    return cursor.lastrowid
+
+## Insert linking table records ##
+# Insert aircraft_document records
+def insert_aircraft_document(cursor, document_id, aircraft_ids):
+    query = "INSERT INTO aircraft_documents (aircraft_id, document_id) VALUES (%s, %s)"
+    for aircraft_id in aircraft_ids:
+        cursor.execute(query, (aircraft_id, document_id))
     
-    cursor.execute("SELECT document_id FROM documents WHERE file_name = %s AND deleted_at IS Null", (file_name,))
+## Get foreign key IDs ##
+def get_author_id(cursor, author):
+    query = "SELECT staff_id FROM staff WHERE email = %s"
+    cursor.execute(query, (author,))
     result = cursor.fetchone()
-    return result[0]
+    return result[0] if result else None
+
+def get_subcategory_id(cursor, subcategory):
+    query = "SELECT subcategory_id FROM subcategories WHERE name = %s"
+    cursor.execute(query, (subcategory,))
+    result = cursor.fetchone()
+    return result[0] if result else None
 
 def get_aircraft_ids_by_names(cursor, aircraft):
     format_strings = ','.join(['%s'] * len(aircraft))
@@ -97,10 +114,22 @@ def get_aircraft_ids_by_names(cursor, aircraft):
     results = cursor.fetchall()
     return [row[0] for row in results]
 
-def insert_aircraft_document(cursor, document_id, aircraft_ids):
-    query = "INSERT INTO aircraft_documents (aircraft_id, document_id) VALUES (%s, %s)"
-    for aircraft_id in aircraft_ids:
-        cursor.execute(query, (aircraft_id, document_id))
+## HELPERS ##
+# Return server error as response
+def server_error(e):
+    return {
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(str(e))
+        }
+
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }
 
 # For JSON date encoding
 class DateTimeEncoder(json.JSONEncoder):

@@ -4,7 +4,11 @@ from mysql.connector import Error
 import mysql.connector
 import os
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def get_method(parameters):
+
+    ## Get all notices - for table view
     
     try:    
         connection = connect_to_db()
@@ -29,11 +33,7 @@ def get_method(parameters):
         }
         return {
             'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
   
@@ -42,11 +42,7 @@ def get_method(parameters):
         
         return {
             'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(e._full_msg)
         }
         
@@ -67,6 +63,7 @@ def build_query(parameters):
         n.category,
         n.subject,
         n.resolved,
+        n.issued,
         n.archived,
         n.notice_at,
         n.deadline_at
@@ -78,8 +75,7 @@ def build_query(parameters):
     JOIN roles AS r
     ON r.role_id = sr.role_id
     """
-    # only return notices that this user is received
-    query += " WHERE n.deleted_at is Null"
+    
     filters = []
     params = []
 
@@ -87,6 +83,9 @@ def build_query(parameters):
         query += " JOIN notifications AS nf ON nf.notice_id = n.notice_id "
         filters.append(" nf.staff_id = %s")
         params.append(parameters["staff_id"])
+
+    # only return notices that this user is received
+    query += " WHERE n.deleted_at is Null"
         
     if 'search' in parameters:
         filters.append("subject LIKE %s")
@@ -154,6 +153,7 @@ def build_query(parameters):
     print(query)
     print(params)
     return query, params
+
 # create a connect to db
 def connect_to_db():
     return mysql.connector.connect(
@@ -162,6 +162,15 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
+
+## HELPERS ##
+# Response headers
+def headers():
+    return {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        }
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):

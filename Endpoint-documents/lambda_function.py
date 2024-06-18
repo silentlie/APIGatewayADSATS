@@ -1,9 +1,10 @@
 import json
 from post_method import post_method
 from get_method import get_method
-from put_method import put_method
 from patch_method import patch_method
 from delete_method import delete_method
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def lambda_handler(event, context):
     method = event.get("httpMethod")
@@ -22,8 +23,6 @@ def lambda_handler(event, context):
     
     if method == "GET":
         return get_method(parameters)
-    if method == "PUT":
-        return put_method(body)
     if method == "POST":
         return post_method(body)
     if method == "PATCH":
@@ -36,14 +35,8 @@ def lambda_handler(event, context):
             'headers': {
                 'Access-Control-Allow-Headers': '*',
                 'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
+                'Access-Control-Allow-Methods': allowed_headers
             },
             'body': json.dumps("Method not allowed")
         }
-import json
-from post_method import post_method
-from get_method import get_method
-from put_method import put_method
-from patch_method import patch_method
-from delete_method import delete_method
 
