@@ -1,7 +1,8 @@
 from mysql.connector import Error
 import mysql.connector
 import os
-def delete_method(body):
+
+def put_method(body):
     try:
         connection = mysql.connector.connect(
             host= os.environ.get('HOST'),
@@ -10,20 +11,17 @@ def delete_method(body):
             database= "adsats_database",
         )
         cursor = connection.cursor()
-
-
-        
         name = body.get("name", default=None)
         emails = body.get("emails", default=None).split(',')
-        timeRange = body.get("timeRange", default=None).split(',')
+        time_range = body.get("timeRange", default=None).split(',')
         archived = body.get("archived", default=None)
         aircraft = body.get("aircraft", default=None).split(',')
-        column_name = body.get("columnName", default=None)
+        column_name = body.get("clumnName", default=None)
         asc = body.get("asc", default=None)
         limit = body.get("limit")
         offset = body.get("offset")
         query = """
-        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(a.name SEPARATOR ', ') 
+        SELECT d.document_id, d.file_name, u.email, d.archived, d.created_at, d.modified_at, ss.name, GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') 
         FROM documents AS d
         JOIN users AS u ON d.uploaded_by_id = u.user_id
         JOIN subcategories AS ss ON ss.subcategory_id = d.subcategory_id
@@ -39,9 +37,9 @@ def delete_method(body):
             placeholders = ', '.join(['%s'] * len(emails))
             conditions.append(f"u.emails IN ({placeholders})")
             params.extend(emails)
-        if timeRange is not None:
+        if time_range is not None:
             conditions.append("d.created_at BETWEEN %s AND %s")
-            params.extend(timeRange)
+            params.extend(time_range)
         if archived is not None:
             conditions.append("d.archived = %s")
             params.append(archived)

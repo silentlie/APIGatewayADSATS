@@ -25,13 +25,13 @@ def post_method(body):
 
         # Collate aircraft ID from the Link aircraft drop down
         # TODO A seperate aircraft dropdown needs to be added to each notice to link a notice with an aircraft
-        if 'aircraft_link' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft_link'])
+        if 'aircraft' in body:
+            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
             insert_aircraft_notices(cursor, notice_id, aircraft_ids)
 
         # Get the document IDs for one or more documents selected to be linked to the notice
         if 'documents' in body:
-            document_ids = get_documents_ids_by_file_names(cursor, body['documents'])
+            document_ids = get_documents_ids_by_file_names(cursor, body['file_names'])
             insert_notice_documents(cursor, notice_id, document_ids)
 
         # Complete the commit only after all transactions have been successfully excecuted

@@ -4,17 +4,15 @@ from mysql.connector import Error
 import mysql.connector
 import os
 
-allowed_headers = 'OPTIONS,GET,POST'
-
-# Endpoint > /notices/notice-to-crew
-# This will get a single notice record based on the 'id' parameter to return
-# to the user showing the full details of the notice they have selected from the table.
+allowed_headers = 'OPTIONS,POST,GET,PATCH'
 
 def get_method(parameters):
+    connection = None
+    cursor = None
     try:
         connection = connect_to_db()
         
-        if 'id' in parameters:
+        if 'notice_id' in parameters:
             cursor = connection.cursor(dictionary=True)
             return get_specific_notice(cursor, parameters)
 
@@ -25,46 +23,45 @@ def get_method(parameters):
         }
   
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        print(f"Error: {str(e)}")
         
         return {
             'statusCode': 500,
             'headers': headers(),
-            'body': json.dumps(e._full_msg)
+            'body': json.dumps(str(e))
         }
         
     finally:
         if cursor is not None:
             cursor.close()
-        if connection.is_connected():
+        if connection is not None and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
 def get_specific_notice(cursor, parameters):
-    
-    query = """
-            SELECT 
-                n.notice_id,
-                u.email AS author,
-                n.subject,
-                nd.message,
-                n.notice_at,
-                n.deadline_at,
-                n.issued,
-                n.resolved
-            FROM notices AS n
-            JOIN notice_details AS nd ON nd.notice_id = n.notice_id
-            JOIN staff AS u ON u.staff_id = n.author_id
-            WHERE n.notice_id = %s 
-            """
-    params= [parameters["id"]]
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    return {
-        'statusCode': 200,
-        'headers': headers(),
-        'body': json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-    }
+    try:
+        query = """
+                SELECT 
+                    *
+                FROM hazard_details
+                WHERE notice_id = %s 
+                """
+        params = [parameters["id"]]
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        print(f"Query successful, rows fetched: {len(rows)}")
+        return {
+            'statusCode': 200,
+            'headers': headers(),
+            'body': json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+        }
+    except Error as e:
+        print(f"Error executing query: {str(e)}")
+        return {
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(str(e))
+        }
 
 ## HELPERS ##
 # create a connect to db

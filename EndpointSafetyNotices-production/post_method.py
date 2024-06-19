@@ -19,8 +19,7 @@ def post_method(body):
 
         # Notice will have already been created. This endpoint will pass in the notice_id via the body
         # This endpoint will create the notice_details record
-        # 'Notice to crew' notices do not require any further review - this endpoint will also update the
-        #   resolved field (in notices table) to 1 (true)
+        # 'Safety notices' require further review so resolved will be left as 0
 
         if 'notice_id' in body:
             cursor = connection.cursor(dictionary=True)
@@ -29,9 +28,6 @@ def post_method(body):
             # If a message has been passed create a new notice_details record
             if 'message' in body:
                 insert_notice_details(cursor, body, notice_id)
-
-            # Update notice 'resolved' field to 1 (true) to confirm notifications have been sent out.
-            update_resolved(cursor, notice_id)
 
             # Complete the commit only after all transactions have been successfully excecuted
             # Commit changes to the database
@@ -80,17 +76,6 @@ def insert_notice_details(cursor, body, notice_id):
     message = body['message']
     query = "INSERT INTO notice_details (notice_id, message) VALUES (%s, %s)"
     params = [notice_id, message]
-    cursor.execute(query, params)
-
-# Update resolved field (in Notices table) to TRUE
-def update_resolved(cursor, notice_id):
-    resolved = 1
-    query = """
-        UPDATE notices
-        SET resolved = %s
-        WHERE notice_id = %s
-    """
-    params = [resolved, notice_id]
     cursor.execute(query, params)
 
 ## HELPERS ##

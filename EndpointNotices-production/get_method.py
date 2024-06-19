@@ -12,6 +12,10 @@ def get_method(parameters):
     
     try:    
         connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        if 'notice_id' in parameters:
+            print("start get specific")
+            return get_specific_notice(cursor, parameters['staff_id'], parameters['notice_id'])
         query, params = build_query(parameters)
         total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
         
@@ -67,6 +71,7 @@ def build_query(parameters):
         n.archived,
         n.notice_at,
         n.deadline_at
+        
     FROM notices AS n
    	JOIN staff AS s 
     ON s.staff_id = n.author_id
@@ -177,3 +182,38 @@ class DateTimeEncoder(json.JSONEncoder):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+
+def get_specific_notice(cursor, staff_id, notice_id):
+    query = """
+    SELECT
+        n.notice_id,
+        s.email,
+        n.category,
+        n.subject,
+        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircraft,
+        n.resolved,
+        n.archived,
+        n.notice_at,
+        n.deadline_at,
+        n.pending_reason,
+        nf.status
+    FROM notices AS n
+    LEFT JOIN notifications AS nf
+    ON n.notice_id = nf.notice_id
+    LEFT JOIN staff AS s
+    ON s.staff_id = n.author_id
+    LEFT JOIN aircraft_notices AS an
+    ON an.notice_id = n.notice_id
+    LEFT JOIN aircraft AS a
+    ON a.aircraft_id = an.aircraft_id
+    WHERE n.deleted_at IS Null
+    AND nf.staff_id = %s
+    AND nf.notice_id = %s
+    """
+    cursor.execute(query, [staff_id, notice_id])
+    return {
+        'statusCode': 200,
+        'headers': headers(),
+        'body': json.dumps(cursor.fetchone(), indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+    }
+    

@@ -3,6 +3,126 @@
     {
       "type": "aws-sam",
       "request": "direct-invoke",
+      "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointSafetyNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointSafetyNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointHazardReport-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointHazardReport-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointDocuments-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointDocuments-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointCrewNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointCrewNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
       "name": "placeHolder-dev:lambda_function.lambda_handler (python3.12)",
       "invokeTarget": {
         "target": "code",
