@@ -10,21 +10,34 @@ def lambda_handler(event, context):
     method = event.get("httpMethod")
     body_str = event.get("body")
     parameters = event.get("queryStringParameters")
+
     print(method)
     print(body_str)
     print(parameters)
-    body = {}
-    if isinstance(body_str, str):
-        body = json.loads(body_str)
-    else:
-        body = body_str
-    if method == "GET":
+
+    try:
+        body = json.loads(body_str) if body_str else {}
+    except json.JSONDecodeError as e:
+        # Log the error for debugging
+        print(f"JSON decoding error: {str(e)}")
+        return {
+            'statusCode': 400,
+            'headers': headers(),
+            'body': json.dumps("Invalid JSON")
+        }
+    if method == "OPTIONS":
+        return {
+            'statusCode': 200,
+            'headers': headers(),
+            'body': json.dumps("OK")
+        }
+    elif method == "GET":
         return get_method(parameters)
-    if method == "POST":
+    elif method == "POST":
         return post_method(body)
-    if method == "PATCH":
+    elif method == "PATCH":
         return patch_method(body)
-    if method == "DELETE":
+    elif method == "DELETE":
         return delete_method(body)
     else:
         return {
@@ -41,3 +54,4 @@ def headers():
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': allowed_headers
     }
+## HELPERS ##

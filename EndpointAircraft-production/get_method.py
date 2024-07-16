@@ -3,7 +3,8 @@ import json
 import mysql.connector
 from mysql.connector import Error
 from datetime import datetime
-from lambda_function import allowed_headers
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def get_method(parameters):
     try:
@@ -27,11 +28,11 @@ def get_method(parameters):
         }
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        print(f"SQL Error: {e._full_msg}")
         return {
             'statusCode': 500,
             'headers': headers(),
-            'body': json.dumps(e._full_msg)
+            'body': json.dumps(f"SQL Error: {e._full_msg}")
         }
     
     except Exception as e:
@@ -39,7 +40,7 @@ def get_method(parameters):
         return {
             'statusCode': 500,
             'headers': headers(),
-            'body': json.dumps(e)
+            'body': json.dumps(f"Error: {e}")
         }
 
     finally:
@@ -62,7 +63,7 @@ def build_query(parameters):
     filters = []
     # parameters for binding
     params = []
-    # search for name of aircraft
+    # search for name
     if 'search' in parameters:
         filters.append("aircraft_name LIKE %s")
         params.append(parameters["search"])
@@ -70,7 +71,7 @@ def build_query(parameters):
     if 'archived' in parameters:
         filters.append("archived = %s")
         params.append(parameters["archived"])
-    # filter based on date range when aircraft was added
+    # filter based on date range when it was added
     if 'created_at' in parameters:
         created_at = parameters["start_at"].split(',')
         filters.append("start_at BETWEEN %s AND %s")
@@ -91,9 +92,9 @@ def total_records(cursor, query, params):
     cursor.execute(total_query, params)
     return cursor.fetchall()[0]['total_records']
 
-# return dit of all aircraft with pagination
+# return dit of all rows with pagination
 def aircraft(cursor, query, params, parameters):
-    # sort column if need it, default is pk of aircraft
+    # sort column if need it, default is pk
     valid_columns = ["aircraft_id", "aircraft_name", "archived", "created_at", "updated_at"]
     valid_orders = ["ASC", "DESC"]
     if 'sort_column' in parameters and 'order' in parameters and parameters['sort_column'] in valid_columns and parameters['order'] in valid_orders:
@@ -110,7 +111,7 @@ def aircraft(cursor, query, params, parameters):
     cursor.execute(query, params)
     return cursor.fetchall()
 
-# return dict of aircraft id and name only
+# return dict of id and name only
 def name_only(cursor):
     query = """
     SELECT
@@ -149,14 +150,4 @@ class DateTimeEncoder(json.JSONEncoder):
         return super().default(obj)
 
 ## HELPERS ##
-
 #===============================================================================
-# parameters = {
-#     'method': "aircraft",
-#     'archived': "0",
-#     'sort_column': "created_at",
-#     'order': "ASC",
-#     'limit': 10,
-#     'offset': 0
-# }
-# print(get_method(parameters))

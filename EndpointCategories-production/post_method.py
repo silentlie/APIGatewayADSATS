@@ -1,96 +1,93 @@
-import mysql.connector
 import os
 import json
+import mysql.connector
 from mysql.connector import Error
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def post_method(body):
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
-
-        # Check if the category name already exists
-        category_name = body["category_name"]
-        check_query = "SELECT COUNT(*) FROM categories WHERE name = %s"
-        cursor.execute(check_query, (category_name,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"Category with name '{category_name}' already exists.")
-            }
-
-        # Insert category and get category_id
-        category_id = insert_get_category_id(cursor, body)
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        # Insert the new record and get the id
+        category_id = insert_category(cursor, body)
+        # Commits the transaction to make the insert operation permanent
+        # If any error is raised, there'll be no commit
         connection.commit()
-
-        # Insert into permission table
-        if 'staff' in body:
-            staff_ids = get_staff_ids_by_email(cursor, body['staff'])
-            insert_permission(cursor, category_id, staff_ids)
-            connection.commit()
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(category_id)
         }
-
+    # Catch SQL exeption
     except Error as e:
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
         print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(f"Error: {e}")
         }
+    # Close cursor and connection
     finally:
+        if cursor:
+            cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
+## FUNCTIONS ##
 
-def insert_get_category_id(cursor, body):
-    category_name = body["category_name"]
-    
+# Insert new record and return id
+def insert_category(cursor, body):
     query = """
-        INSERT INTO categories (name, archived)
-        VALUES (%s, %s)
+    INSERT INTO categories (category_name, archived, created_at, description)
+    VALUES (%s, %s, %s, %s)
     """
-    params = [category_name, False]
+    params = [body["category_name"], body["archived"], body["created_at"], body["description"]]
     cursor.execute(query, params)
+    cursor.execute("SELECT LAST_INSERT_ID()")
+    category_id = cursor.fetchone()
+    print("Record inserted successfully with ID:", category_id)
+    return category_id
 
-    query = "SELECT category_id FROM categories WHERE name = %s"
-    cursor.execute(query, (category_name,))
-    result = cursor.fetchone()
-    return result[0]
+## FUNCTIONS ##
 
-def get_staff_ids_by_email(cursor, staff_email):
-    format_strings = ','.join(['%s'] * len(staff_email))
-    query = f"SELECT staff_id FROM staff WHERE email IN ({format_strings})"
-    cursor.execute(query, tuple(staff_email))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
 
-def insert_permission(cursor, category_id, staff_ids):
-    query = "INSERT INTO permissions (category_id, staff_id) VALUES (%s, %s)"
-    for staff_id in staff_ids:
-        cursor.execute(query, (category_id, staff_id))
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================

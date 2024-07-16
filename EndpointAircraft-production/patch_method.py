@@ -2,22 +2,28 @@ import os
 import json
 import mysql.connector
 from mysql.connector import Error
-from lambda_function import allowed_headers
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def patch_method(body):
     try:
         connection = connect_to_db()
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
         aircraft_id = body['aircraft_id']
-        # Update archived value if present in body
-        if 'archived' in body:
-            update_archived(cursor, body['archived'], aircraft_id)
-
-        # Update aircraft name if present in body
+        
+        # Update name if present in body
         if 'aircraft name' in body:
             update_aircraft_name(cursor,  body['aircraft_name'],aircraft_id)
 
-        # Delete existing staff assignments and insert new ones if 'staff' is in body
+        # Update archived value if present in body
+        if 'archived' in body:
+            update_archived(cursor, body['archived'], aircraft_id)
+        
+        # Update description value if present in body
+        if 'description' in body:
+            update_archived(cursor, body['description'], aircraft_id)
+        
+        # Delete existing staff assignments then insert new ones if 'staff' is in body
         if 'staff_ids' in body:
             insert_aircraft_staff(cursor, body['staff_ids'], aircraft_id)
         connection.commit()
@@ -29,7 +35,7 @@ def patch_method(body):
         }
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        print(f"SQL Error: {e._full_msg}")
         # Error no 1062 means duplicate name
         if e.errno == 1062:
             # Error code 409 means conflict in the state of the server
@@ -41,7 +47,7 @@ def patch_method(body):
         return {
             'statusCode': error_code,
             'headers': headers(),
-            'body': json.dumps(f"Error: {e._full_msg}")
+            'body': json.dumps(f"SQL Error: {e._full_msg}")
         }
     # Catch other exeptions
     except Exception as e:
@@ -63,7 +69,7 @@ def patch_method(body):
 
 ## FUNCTIONS ##
 
-# Update aircraft name
+# Update name
 def update_aircraft_name(cursor, aircraft_name, aircraft_id):
     update_query = """
         UPDATE aircraft
@@ -81,7 +87,16 @@ def update_archived(cursor, archived, aircraft_id):
     """
     params = [archived, aircraft_id]
     cursor.execute(update_query, params)
-# Delete linking records of specific aircraft
+# Update description
+def update_description(cursor, description, aircraft_id):
+    update_query = """
+        UPDATE aircraft
+        SET description = %s
+        WHERE aircraft_id = %s
+    """
+    params = [description, aircraft_id]
+    cursor.execute(update_query, params)
+# Delete linking records of specific id
 def delete_aircraft_staff(cursor, aircraft_id):
     delete_query = """
         DELETE FROM aircraft_staff
@@ -89,7 +104,7 @@ def delete_aircraft_staff(cursor, aircraft_id):
     """
     params = [aircraft_id]
     cursor.execute(delete_query, params)
-# Insert into aircraft_staff
+# Insert into many to many table
 def insert_aircraft_staff(cursor, staff_ids, aircraft_id):
     # Delete before insert
     delete_aircraft_staff(cursor, aircraft_id)

@@ -1,16 +1,18 @@
+from datetime import datetime
 import os
 import json
 import mysql.connector
 from mysql.connector import Error
-from lambda_function import allowed_headers
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def post_method(body):
     try:
         connection = connect_to_db()
-        cursor = connection.cursor()
-        # Insert the new aircraft record and get the aircraft ID
+        cursor = connection.cursor(dictionary=True)
+        # Insert the new record and get the id
         aircraft_id = insert_aircraft(cursor, body)
-        # Link staff to newly added aircraft in table aircraft_staff
+        # Add linking records if any into the table
         if 'staff_ids' in body:
             insert_aircraft_staff(cursor, aircraft_id, body['staff_ids'])
         # Commits the transaction to make the insert operation permanent
@@ -24,7 +26,7 @@ def post_method(body):
         }
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        print(f"SQL Error: {e._full_msg}")
         # Error no 1062 means duplicate name
         if e.errno == 1062:
             # Error code 409 means conflict in the state of the server
@@ -36,7 +38,7 @@ def post_method(body):
         return {
             'statusCode': error_code,
             'headers': headers(),
-            'body': json.dumps(f"Error: {e._full_msg}")
+            'body': json.dumps(f"SQL Error: {e._full_msg}")
         }
     # Catch other exeptions
     except Exception as e:
@@ -44,7 +46,7 @@ def post_method(body):
         return {
             'statusCode': 500,
             'headers': headers(),
-            'body': json.dumps(f"Error: {e}")
+            'body': json.dumps(f"Error: {e.with_traceback}")
         }
     # Close cursor and connection
     finally:
@@ -58,20 +60,20 @@ def post_method(body):
 
 ## FUNCTIONS ##
 
-# Insert new aircraft and return id of that aircraft
+# Insert new record and return id
 def insert_aircraft(cursor, body):
     query = """
     INSERT INTO aircraft (aircraft_name, archived, created_at, description)
-    VALUES (%s, %s, %s)
+    VALUES (%s, %s, %s, %s)
     """
     params = [body["aircraft_name"], body["archived"], body["created_at"], body["description"]]
     cursor.execute(query, params)
     cursor.execute("SELECT LAST_INSERT_ID()")
-    aircraft_id = cursor.fetchone()[0]
+    aircraft_id = cursor.fetchone()
     print("Record inserted successfully with ID:", aircraft_id)
     return aircraft_id
 
-# Insert into aircraft_staff
+# Insert into many to many table
 def insert_aircraft_staff(cursor, aircraft_id, staff_ids):
     insert_query = """
         INSERT INTO aircraft_staff (aircraft_id, staff_id)
@@ -103,3 +105,10 @@ def headers():
 
 ## HELPERS ##
 #===============================================================================
+body = {
+    'aircraft_name': "PR-RST",
+    'archived': 0,
+    'created_at': datetime.now(),
+    'description': None
+}
+post_method(body)

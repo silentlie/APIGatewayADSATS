@@ -2,19 +2,20 @@ import os
 import json
 import mysql.connector
 from mysql.connector import Error
-from lambda_function import allowed_headers
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def delete_method(body):
     try:
         connection = connect_to_db()
-        cursor = connection.cursor()
+        cursor = connection.cursor(dictionary=True)
         aircraft_id = body["aircraft_id"]
 
         delete_query = """
             DELETE FROM aircraft
             WHERE aircraft_id = %s
         """
-        cursor.execute(delete_query, aircraft_id)
+        cursor.execute(delete_query, [aircraft_id])
         connection.commit()
         return {
             'statusCode': 200,
@@ -23,7 +24,7 @@ def delete_method(body):
         }
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        print(f"SQL Error: {e._full_msg}")
         # Error no 1062 means duplicate name
         if e.errno == 1062:
             # Error code 409 means conflict in the state of the server
@@ -35,7 +36,7 @@ def delete_method(body):
         return {
             'statusCode': error_code,
             'headers': headers(),
-            'body': json.dumps(f"Error: {e._full_msg}")
+            'body': json.dumps(f"SQL Error: {e._full_msg}")
         }
     # Catch other exeptions
     except Exception as e:
