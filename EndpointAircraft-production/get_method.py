@@ -3,113 +3,128 @@ import json
 from mysql.connector import Error
 import mysql.connector
 import os
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def get_method(parameters):
-    if not parameters:
-        return get_method_no_parameters()
     try:
         connection = connect_to_db()
-        query, params = build_query(parameters)
-        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-        cursor = connection.cursor()
-        cursor.execute(total_query, params)
-        total_records = cursor.fetchone()[0] # type: ignore
         cursor = connection.cursor(dictionary=True)
-        query += " LIMIT %s OFFSET %s"
-        # in parameters of method number by default is a str so must convert back to int
-        limit = int(parameters["limit"])
-        offset = int(parameters["offset"])
-        params.extend([limit, offset])
-        # excute the query
-        cursor.execute(query, params)
-        # this is get method which return data base on parameters so cursor.fetchall is call
-        # but in some method we only need to know if the query is succeed or not
-        # use cursor.commit()
-        rows = cursor.fetchall()
-        response = {
-            "total_records": total_records,
-            "rows": rows
-        }
+        valid_methods = ["name_only", "aircraft"]
+        if 'method' not in parameters or parameters['method'] not in valid_methods:
+            raise ValueError("Invalid method")
+        elif parameters['method'] == "name_only":
+            response = name_only(cursor)
+        elif (parameters['method'] == "aircraft"):
+            query, params = build_query(parameters)
+            response = {}
+            response['total_records'] = total_records(cursor, query, params)
+            response['aircraft'] = aircraft(cursor, query, params, parameters)
+        print(response)
         return {
             'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
   
     except Error as e:
         print(f"Error: {e._full_msg}")
-        
         return {
             'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(e._full_msg)
         }
-        
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return {
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(e)
+        }
+
     finally:
         if cursor is not None:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
+## FUNCTIONS ##
+# build query
 def build_query(parameters):
-    # the base query
     query = """
-    SELECT 
-        aircraft_id, 
-        name, 
-        archived, 
-        created_at,
-        deleted_at
+    SELECT
+        *
     FROM aircraft
     """
-    query += " WHERE deleted_at IS Null"
     # define filters if any
     filters = []
     # parameters for binding
     params = []
     # search for name of aircraft
-    if 'name' in parameters:
-        filters.append("name LIKE %s")
-        params.append(parameters["name"]) 
+    if 'search' in parameters:
+        filters.append("aircraft_name LIKE %s")
+        params.append(parameters["search"])
     # filter based on archived or not
     if 'archived' in parameters:
-        # Ensure archived is a valid value to prevent SQL injection
-        # Add other valid value if necessar
-        valid_value = ["true", "false"]
-        if parameters["archived"] in valid_value:
-            # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
-    # filter based on date range
+        filters.append("archived = %s")
+        params.append(parameters["archived"])
+    # filter based on date range when aircraft was added
     if 'created_at' in parameters:
         created_at = parameters["start_at"].split(',')
         filters.append("start_at BETWEEN %s AND %s")
         params.extend(created_at)
-    # if there is any filter add base query
+    # if there is any filter add to query
     if filters:
-        query += " AND " + " AND ".join(filters)
-    # if sorting is required
-    if 'sort_column' in parameters:
-        # Ensure sort_column is a valid column name to prevent SQL injection
-        # Add other valid column names if necessary
-        valid_columns = ["name", "aircraft_id", "archived", "start_at"]
-        if parameters["sort_column"] in valid_columns:
-            # asc if true, desk if false
-            order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
-            # in this part must parse as str cannot use binding because sort_column cannot be str
-            query += f" ORDER BY {parameters['sort_column']} {order}"
+        query += "WHERE " + " AND ".join(filters)
     # finish prepare query and params
     print(query)
     print(params)
     return query, params
 
+# return dict of total records
+def total_records(cursor, query, params):
+    total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
+    print(total_query)
+    print(params)
+    cursor.execute(total_query, params)
+    return cursor.fetchall()[0]['total_records']
+
+# return dit of all aircraft with pagination
+def aircraft(cursor, query, params, parameters):
+    # sort column if need it, default is pk of aircraft
+    valid_columns = ["aircraft_id", "aircraft_name", "archived", "created_at", "updated_at"]
+    valid_orders = ["ASC", "DESC"]
+    if 'sort_column' in parameters and 'order' in parameters and parameters['sort_column'] in valid_columns and parameters['order'] in valid_orders:
+        query += " ORDER BY %s %s"
+        params.append(parameters['sort_column'])
+        params.append(parameters['order'])
+    # pagination
+    query += " LIMIT %s OFFSET %s "
+    params.append(int(parameters["limit"]))
+    params.append(int(parameters["offset"]))
+    # finish query
+    print(query)
+    print(params)
+    cursor.execute(query, params)
+    return cursor.fetchall()
+
+# return dict of aircraft id and name only
+def name_only(cursor):
+    query = """
+    SELECT
+        aircraft_id,
+        aircraft_name
+    FROM aircraft
+    """
+    cursor.execute(query)
+    return cursor.fetchall()
+
+## FUNCTIONS ##
+
+## HELPERS ##
 # Create a connection to the DB
 def connect_to_db():
     return mysql.connector.connect(
@@ -118,41 +133,31 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
-# for dump json format
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+# for dump datetime json format
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
-# return a list string for filtering, searching, sending
-def get_method_no_parameters():
-    try:
-        # get all of aircraft names where it is not archived
-        query = "SELECT name FROM aircraft WHERE archived = false and deleted_at IS Null"
-        connection = connect_to_db()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall() 
-        names = [item[0] for item in response] # type: ignore
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(names, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
+
+## HELPERS ##
 
 # ===========================================================================
+# parameters = {
+#     'method': "aircraft",
+#     'archived': "0",
+#     'sort_column': "created_at",
+#     'order': "ASC",
+#     'limit': 10,
+#     'offset': 0
+# }
+# print(get_method(parameters))
