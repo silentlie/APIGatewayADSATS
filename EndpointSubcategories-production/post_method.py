@@ -1,100 +1,93 @@
-import json
-from mysql.connector import Error
-import mysql.connector
 import os
-from datetime import datetime
+import json
+import mysql.connector
+from mysql.connector import Error
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def post_method(body):
-    connection = None
-    cursor = None
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database",
-        )
-        cursor = connection.cursor()
-        subcategory_name = body["subcategory_name"]
-        check_query = "SELECT COUNT(*) FROM subcategories WHERE subcategory_name = %s"
-        cursor.execute(check_query, (subcategory_name,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"subcategory with name '{subcategory_name}' already exists.")
-            }
-        subcategory_id = insert_and_get_subcategory_id(cursor, body)
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        # Insert the new record and get the id
+        subcategory_id = insert_subcategory(cursor, body)
+        # Commits the transaction to make the insert operation permanent
+        # If any error is raised, there'll be no commit
         connection.commit()
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps(subcategory_id, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+            'headers': headers(),
+            'body': json.dumps(subcategory_id)
         }
-  
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps(str(e))
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e}")
         }
-        
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if connection is not None and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-def insert_and_get_subcategory_id(cursor, body):
-    category_name = body["category_name"]
-    subcategory_name = body["subcategory_name"]
-    description = body["description"]
-    
-    category_id = get_category_id(cursor, category_name)
-        
+## FUNCTIONS ##
+
+# Insert new record and return id
+def insert_subcategory(cursor, body):
     query = """
-    INSERT INTO subcategories (category_id, name, description, archived)
-    VALUES (%s, %s, %s, %s)
+    INSERT INTO subcategories (subcategory_name, archived, created_at, description, category_id)
+    VALUES (%s, %s, %s, %s, %s)
     """
-    params = [category_id, subcategory_name, description, False]
+    params = [body["subcategory_name"], body["archived"], body["created_at"], body["description"], body["category_id"]]
     cursor.execute(query, params)
-    
-    query = "SELECT subcategory_id FROM subcategories WHERE name = %s"
-    cursor.execute(query, (subcategory_name,))
-    result = cursor.fetchone()
-    print(result)
-    return result[0]
+    cursor.execute("SELECT LAST_INSERT_ID()")
+    subcategory_id = cursor.fetchone()
+    print("Record inserted successfully with ID:", subcategory_id)
+    return subcategory_id
 
-def get_category_id(cursor, category_name):
-    select_category_id = """SELECT category_id FROM categories WHERE name = %s"""
-    cursor.execute(select_category_id, (category_name,))
-    category_id = cursor.fetchone()
-    if category_id is not None:
-        return category_id[0]
-    else:
-        # Handle case where category is not found
-        return None
+## FUNCTIONS ##
 
-# for dump json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================

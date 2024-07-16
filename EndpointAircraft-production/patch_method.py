@@ -12,7 +12,7 @@ def patch_method(body):
         aircraft_id = body['aircraft_id']
         
         # Update name if present in body
-        if 'aircraft name' in body:
+        if 'aircraft_name' in body:
             update_aircraft_name(cursor,  body['aircraft_name'],aircraft_id)
 
         # Update archived value if present in body
@@ -21,7 +21,7 @@ def patch_method(body):
         
         # Update description value if present in body
         if 'description' in body:
-            update_archived(cursor, body['description'], aircraft_id)
+            update_description(cursor, body['description'], aircraft_id)
         
         # Delete existing staff assignments then insert new ones if 'staff' is in body
         if 'staff_ids' in body:
@@ -78,6 +78,7 @@ def update_aircraft_name(cursor, aircraft_name, aircraft_id):
     """
     params = [aircraft_name, aircraft_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 # Update archived or not
 def update_archived(cursor, archived, aircraft_id):
     update_query = """
@@ -87,6 +88,7 @@ def update_archived(cursor, archived, aircraft_id):
     """
     params = [archived, aircraft_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 # Update description
 def update_description(cursor, description, aircraft_id):
     update_query = """
@@ -96,6 +98,7 @@ def update_description(cursor, description, aircraft_id):
     """
     params = [description, aircraft_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 # Delete linking records of specific id
 def delete_aircraft_staff(cursor, aircraft_id):
     delete_query = """

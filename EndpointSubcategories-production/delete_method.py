@@ -1,57 +1,78 @@
-import mysql.connector
 import os
 import json
-import datetime
+import mysql.connector
 from mysql.connector import Error
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def delete_method(body):
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        subcategory_id = body["subcategory_id"]
 
-        subcategory_id = body.get("subcategory_id")
-
-        if not subcategory_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps("Invalid input: subcategory_id must be provided")
-            }
-
-        update_query = """
-            UPDATE subcategories
-            SET deleted_at = %s
+        delete_query = """
+            DELETE FROM subcategories
             WHERE subcategory_id = %s
         """
-
-        cursor.execute(update_query, (datetime.datetime.now(), subcategory_id))
+        cursor.execute(delete_query, [subcategory_id])
         connection.commit()
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(subcategory_id)
         }
+    # Catch SQL exeption
     except Error as e:
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
         print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps("Internal server error")
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e}")
         }
+    # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-    
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
 
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
 
+## HELPERS ##
+#===============================================================================

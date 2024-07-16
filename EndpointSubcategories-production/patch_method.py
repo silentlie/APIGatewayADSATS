@@ -1,86 +1,133 @@
-import mysql.connector
 import os
 import json
+import mysql.connector
 from mysql.connector import Error
 
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+
 def patch_method(body):
-    connection = None
-    cursor = None
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
-        
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
         subcategory_id = body['subcategory_id']
+        
+        # Update name if present in body
+        if 'subcategory name' in body:
+            update_subcategory_name(cursor,  body['subcategory_name'],subcategory_id)
 
+        # Update archived value if present in body
         if 'archived' in body:
-            update_archived_value(cursor, subcategory_id, body['archived'])
-            connection.commit()
-
-        if 'name' in body or 'description' in body or 'category' in body:
-            update_subcategory(cursor, body, subcategory_id)
-            connection.commit()
+            update_archived(cursor, body['archived'], subcategory_id)
+        
+        # Update description value if present in body
+        if 'description' in body:
+            update_description(cursor, body['description'], subcategory_id)
+        
+        # Update category_id if present in body
+        if 'category_id' in body:
+            update_category_id(cursor, body['category_id'], subcategory_id)
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(subcategory_id)
         }
-    
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'body': json.dumps({"error": str(e)})
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e}")
         }
+    # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-    
+## FUNCTIONS ##
 
-def update_subcategory(cursor, body, subcategory_id):
-    subcategory = body.get("name", None)
-    catgeory = body.get("category", None)
-    description = body.get("description",None)
-    
-    category_id = get_category_id(cursor, catgeory)
-    
+# Update name
+def update_subcategory_name(cursor, subcategory_name, subcategory_id):
     update_query = """
         UPDATE subcategories
-        SET
-            category_id = %s,
-            name= %s,
-            description = %s
+        SET subcategory_name = %s
         WHERE subcategory_id = %s
     """
-    params = [category_id, subcategory,description, subcategory_id]
+    params = [subcategory_name, subcategory_id]
     cursor.execute(update_query, params)
-
-def update_archived_value(cursor, subcategory_id, archived):
-    
-    query = """
-        UPDATE subcategories 
+    print(cursor.rowcount, " records updated successfully")
+# Update archived or not
+def update_archived(cursor, archived, subcategory_id):
+    update_query = """
+        UPDATE subcategories
         SET archived = %s
         WHERE subcategory_id = %s
     """
     params = [archived, subcategory_id]
-    cursor.execute(query, params)
+    cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
+# Update description
+def update_description(cursor, description, subcategory_id):
+    update_query = """
+        UPDATE subcategories
+        SET description = %s
+        WHERE subcategory_id = %s
+    """
+    params = [description, subcategory_id]
+    cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
+# Update category_id
+def update_category_id(cursor, category_id, subcategory_id):
+    update_query = """
+        UPDATE subcategories
+        SET category_id = %s
+        WHERE subcategory_id = %s
+    """
+    params = [category_id, subcategory_id]
+    cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 
-def get_category_id(cursor, catgeory):
-    query = "SELECT category_id FROM categories WHERE name = %s"
-    cursor.execute(query, (catgeory,))
-    result = cursor.fetchone()
-    return result[0]
+## FUNCTIONS ##
 
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================

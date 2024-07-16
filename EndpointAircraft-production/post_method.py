@@ -105,10 +105,3 @@ def headers():
 
 ## HELPERS ##
 #===============================================================================
-body = {
-    'aircraft_name': "PR-RST",
-    'archived': 0,
-    'created_at': datetime.now(),
-    'description': None
-}
-post_method(body)

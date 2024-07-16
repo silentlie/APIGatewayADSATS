@@ -21,7 +21,7 @@ def patch_method(body):
         
         # Update description value if present in body
         if 'description' in body:
-            update_archived(cursor, body['description'], category_id)
+            update_description(cursor, body['description'], category_id)
 
         return {
             'statusCode': 200,
@@ -73,6 +73,7 @@ def update_category_name(cursor, category_name, category_id):
     """
     params = [category_name, category_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 # Update archived or not
 def update_archived(cursor, archived, category_id):
     update_query = """
@@ -82,6 +83,7 @@ def update_archived(cursor, archived, category_id):
     """
     params = [archived, category_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 # Update description
 def update_description(cursor, description, category_id):
     update_query = """
@@ -91,6 +93,7 @@ def update_description(cursor, description, category_id):
     """
     params = [description, category_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 
 ## FUNCTIONS ##
 
