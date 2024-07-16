@@ -1,10 +1,9 @@
-from datetime import datetime
-import json
-from mysql.connector import Error
-import mysql.connector
 import os
-
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+import json
+import mysql.connector
+from mysql.connector import Error
+from datetime import datetime
+from lambda_function import allowed_headers
 
 def get_method(parameters):
     try:
@@ -26,7 +25,7 @@ def get_method(parameters):
             'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
-  
+    # Catch SQL exeption
     except Error as e:
         print(f"Error: {e._full_msg}")
         return {
@@ -151,7 +150,7 @@ class DateTimeEncoder(json.JSONEncoder):
 
 ## HELPERS ##
 
-# ===========================================================================
+#===============================================================================
 # parameters = {
 #     'method': "aircraft",
 #     'archived': "0",

@@ -1,101 +1,105 @@
-import mysql.connector
 import os
 import json
+import mysql.connector
 from mysql.connector import Error
-from datetime import datetime
+from lambda_function import allowed_headers
 
 def post_method(body):
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
+        connection = connect_to_db()
         cursor = connection.cursor()
-
-        # Check if the aircraft name already exists
-        aircraft_name = body["aircraftName"]
-        check_query = "SELECT COUNT(*) FROM aircraft WHERE name = %s"
-        cursor.execute(check_query, (aircraft_name,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"Aircraft with name '{aircraft_name}' already exists.")
-            }
-
         # Insert the new aircraft record and get the aircraft ID
-        aircraft_id = insert_and_get_aircraft_id(cursor, body)
+        aircraft_id = insert_aircraft(cursor, body)
+        # Link staff to newly added aircraft in table aircraft_staff
+        if 'staff_ids' in body:
+            insert_aircraft_staff(cursor, aircraft_id, body['staff_ids'])
+        # Commits the transaction to make the insert operation permanent
+        # If any error is raised, there'll be no commit
         connection.commit()
-        
-        # aircraft_staff
-        if 'staff' in body:
-            staff_ids = get_staff_ids_by_names(cursor, body['staff'])
-            insert_aircraft_staff(cursor, aircraft_id, staff_ids)
-            connection.commit()
-        
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(aircraft_id)
         }
-
+    # Catch SQL exeption
     except Error as e:
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
         print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
+            'headers': headers(),
             'body': json.dumps(f"Error: {e}")
         }
+    # Close cursor and connection
     finally:
+        if cursor:
+            cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-def insert_and_get_aircraft_id(cursor, body):
-    aircraft_name = body["aircraftName"]
-    archived = body["archived"]
-    created_at = body["created_at"]
+## FUNCTIONS ##
 
+# Insert new aircraft and return id of that aircraft
+def insert_aircraft(cursor, body):
     query = """
-    INSERT INTO aircraft (name, archived, created_at)
+    INSERT INTO aircraft (aircraft_name, archived, created_at, description)
     VALUES (%s, %s, %s)
     """
-    params = [aircraft_name, archived, created_at]
+    params = [body["aircraft_name"], body["archived"], body["created_at"], body["description"]]
     cursor.execute(query, params)
-    
-    query = "SELECT aircraft_id FROM aircraft WHERE name = %s"
-    cursor.execute(query, (aircraft_name,))
-    result = cursor.fetchone()
-    print(result)
-    return result[0]
+    cursor.execute("SELECT LAST_INSERT_ID()")
+    aircraft_id = cursor.fetchone()[0]
+    print("Record inserted successfully with ID:", aircraft_id)
+    return aircraft_id
 
-def get_staff_ids_by_names(cursor, staff):
-    format_strings = ','.join(['%s'] * len(staff))
-    query = f"SELECT staff_id FROM staff WHERE email IN ({format_strings})"
-    cursor.execute(query, tuple(staff))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
-
+# Insert into aircraft_staff
 def insert_aircraft_staff(cursor, aircraft_id, staff_ids):
-    query = "INSERT INTO aircraft_staff (aircraft_id, staff_id) VALUES (%s, %s)"
-    for staff_id in staff_ids:
-        cursor.execute(query, (aircraft_id, staff_id))
-        
+    insert_query = """
+        INSERT INTO aircraft_staff (aircraft_id, staff_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
+
+## FUNCTIONS ##
+
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================

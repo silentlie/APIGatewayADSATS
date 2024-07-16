@@ -1,93 +1,79 @@
-import mysql.connector
 import os
 import json
+import mysql.connector
 from mysql.connector import Error
+from lambda_function import allowed_headers
 
 def patch_method(body):
-    connection = None
-    cursor = None
     try:
-       
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
+        connection = connect_to_db()
         cursor = connection.cursor()
-
         aircraft_id = body['aircraft_id']
-
         # Update archived value if present in body
         if 'archived' in body:
-            update_archived_value(cursor, aircraft_id, body['archived'])
-            connection.commit()
+            update_archived(cursor, body['archived'], aircraft_id)
 
         # Update aircraft name if present in body
-        if 'name' in body:
-            update_aircraft(cursor, body, aircraft_id)
-            connection.commit()
+        if 'aircraft name' in body:
+            update_aircraft_name(cursor,  body['aircraft_name'],aircraft_id)
 
         # Delete existing staff assignments and insert new ones if 'staff' is in body
-        if 'staff' in body:
-            delete_staff_assignments(cursor, aircraft_id)
-            connection.commit()
-            staff_ids = select_staff_ids(cursor, body['staff'])
-            insert_staff_assignments(cursor, staff_ids, aircraft_id)
-            connection.commit()
+        if 'staff_ids' in body:
+            insert_aircraft_staff(cursor, body['staff_ids'], aircraft_id)
+        connection.commit()
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps( aircraft_id)
+            'headers': headers(),
+            'body': json.dumps(aircraft_id)
         }
-
-    except ValueError as ve:
-        return {
-            'statusCode': 400,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps({"error": str(ve)})
-        }
-
+    # Catch SQL exeption
     except Error as e:
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps({"error": str(e)})
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e}")
         }
-
+    # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-def update_aircraft(cursor, body, aircraft_id):
-    name = body["name"]
+## FUNCTIONS ##
 
-    if name is not None:
-        update_query = """
-            UPDATE aircraft
-            SET name = %s
-            WHERE aircraft_id = %s
-        """
-        params = [name, aircraft_id]
-        cursor.execute(update_query, params)
-
-def update_archived_value(cursor, aircraft_id, archived):
+# Update aircraft name
+def update_aircraft_name(cursor, aircraft_name, aircraft_id):
+    update_query = """
+        UPDATE aircraft
+        SET aircraft_name = %s
+        WHERE aircraft_id = %s
+    """
+    params = [aircraft_name, aircraft_id]
+    cursor.execute(update_query, params)
+# Update archived or not
+def update_archived(cursor, archived, aircraft_id):
     update_query = """
         UPDATE aircraft
         SET archived = %s
@@ -95,34 +81,45 @@ def update_archived_value(cursor, aircraft_id, archived):
     """
     params = [archived, aircraft_id]
     cursor.execute(update_query, params)
-
-def delete_staff_assignments(cursor, aircraft_id):
+# Delete linking records of specific aircraft
+def delete_aircraft_staff(cursor, aircraft_id):
     delete_query = """
         DELETE FROM aircraft_staff
         WHERE aircraft_id = %s
     """
     params = [aircraft_id]
     cursor.execute(delete_query, params)
-
-def select_staff_ids(cursor, staff_emails):
-    staff_ids = []
-    for email in staff_emails:
-        select_query = """
-            SELECT staff_id
-            FROM staff
-            WHERE email = %s
-        """
-        cursor.execute(select_query, (email,))
-        result = cursor.fetchone()
-        if result:
-            staff_ids.append(result[0])
-    return staff_ids
-
-def insert_staff_assignments(cursor, staff_ids, aircraft_id):
+# Insert into aircraft_staff
+def insert_aircraft_staff(cursor, staff_ids, aircraft_id):
+    # Delete before insert
+    delete_aircraft_staff(cursor, aircraft_id)
     insert_query = """
         INSERT INTO aircraft_staff (aircraft_id, staff_id)
         VALUES (%s, %s)
     """
-    for staff_id in staff_ids:
-        params = (aircraft_id, staff_id)
-        cursor.execute(insert_query, params)
+    records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
+
+## FUNCTIONS ##
+
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================
