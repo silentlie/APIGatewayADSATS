@@ -3,6 +3,201 @@
     {
       "type": "aws-sam",
       "request": "direct-invoke",
+      "name": "RunSQL:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/RunSQL",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointSubcategories-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointSubcategories-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointStaff-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointStaff-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointSafetyNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointSafetyNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointRoles-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointRoles-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointNotifications-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotifications-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointHazardReport-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointHazardReport-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointDocuments-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointDocuments-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointCrewNotices-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointCrewNotices-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointCategories-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointCategories-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointBCAAReport-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointBCAAReport-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
+      "name": "EndpointAircraft-production:lambda_function.lambda_handler (python3.12)",
+      "invokeTarget": {
+        "target": "code",
+        "projectRoot": "${workspaceFolder}/EndpointAircraft-production",
+        "lambdaHandler": "lambda_function.lambda_handler"
+      },
+      "lambda": {
+        "runtime": "python3.12",
+        "payload": {},
+        "environmentVariables": {}
+      }
+    },
+    {
+      "type": "aws-sam",
+      "request": "direct-invoke",
       "name": "EndpointNotices-production:lambda_function.lambda_handler (python3.12)",
       "invokeTarget": {
         "target": "code",
