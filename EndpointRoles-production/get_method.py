@@ -29,16 +29,16 @@ def get_method(
         ):
             raise ValueError("Invalid method")
         elif (parameters['method'] == "name_only"):
-            response = name_only(cursor)
+            return_body = name_only(cursor)
         elif (parameters['method'] == "roles"):
             query, params = build_query(parameters)
-            response = {}
-            response['total_records'] = total_records(cursor, query, params)
-            response['roles'] = roles(cursor, query, params, parameters)
+            return_body = {}
+            return_body['total_records'] = total_records(cursor, query, params)
+            return_body['roles'] = roles(cursor, query, params, parameters)
         elif (parameters['method'] == "specific_role_staff"):
             role_id = parameters['role_id']
             cursor = connection.cursor()
-            response = {
+            return_body = {
                 'staff_ids': specific_role_staff(cursor, role_id)
             }
         status_code = 200
@@ -57,9 +57,9 @@ def get_method(
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
-    response = json_response(status_code, return_body)
-    print (response)
-    return response
+    return_body = json_response(status_code, return_body)
+    print (return_body)
+    return return_body
 
 @timer
 def build_query(

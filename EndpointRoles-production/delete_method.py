@@ -12,6 +12,8 @@ def delete_method(
     """
     Delete method
     """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)

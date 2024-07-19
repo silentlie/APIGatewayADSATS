@@ -26,12 +26,12 @@ def get_method(
         if 'procedure' not in parameters or parameters['procedure'] not in valid_procedures:
             raise ValueError("Invalid procedure")
         elif parameters['procedure'] == "name_only":
-            response = name_only(cursor)
+            return_body = name_only(cursor)
         elif (parameters['procedure'] == "subcategories"):
             query, params = build_query(parameters)
-            response = {}
-            response['total_records'] = total_records(cursor, query, params)
-            response['subcategories'] = subcategories(cursor, query, params, parameters)
+            return_body = {}
+            return_body['total_records'] = total_records(cursor, query, params)
+            return_body['subcategories'] = subcategories(cursor, query, params, parameters)
         status_code = 200
     # Catch SQL exeption
     except Error as e:
@@ -48,9 +48,9 @@ def get_method(
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
-    response = json_response(status_code, return_body)
-    print (response)
-    return response
+    return_body = json_response(status_code, return_body)
+    print (return_body)
+    return return_body
 
 @timer
 def build_query(

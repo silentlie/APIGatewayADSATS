@@ -22,7 +22,7 @@ def get_method(
         valid_procedures = [
             "name_only",
             "aircraft",
-            "specific_aircraft_staff"
+            "specific_aircraft",
         ]
         if (
             'procedure' not in parameters 
@@ -36,7 +36,7 @@ def get_method(
             return_body = {}
             return_body['total_records'] = total_records(cursor, query, params)
             return_body['aircraft'] = aircraft(cursor, query, params, parameters)
-        elif (parameters['procedure'] == "specific_aircraft_staff"):
+        elif (parameters['procedure'] == "specific_aircraft"):
             aircraft_id = int(parameters['aircraft_id'])
             cursor = connection.cursor()
             return_body = {
@@ -198,4 +198,4 @@ def specific_aircraft_staff(
 #     'limit': "20",
 #     'offset': "0"
 # }
-# print(get_method(parameters))
+# get_method(parameters)

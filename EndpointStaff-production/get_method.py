@@ -1,208 +1,235 @@
-from datetime import datetime
-import json
-from mysql.connector import Error
-import mysql.connector
-import os
+from helper import (
+    connect_to_db, 
+    json_response, 
+    timer, 
+    Error, 
+    MySQLCursorAbstract
+)
 
-def get_method(parameters):
-    if not parameters:
-        return get_method_no_parameters()
+@timer
+def get_method(
+    parameters: dict
+) -> dict:
+    """
+    Get method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
-        
-        if 'email' in parameters:
-            cursor = connection.cursor(dictionary=True)
-            return get_specific_staff(cursor, parameters)
-
-        query, params = build_query(parameters)
-        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-        cursor = connection.cursor()
-        cursor.execute(total_query, params)
-        total_records = cursor.fetchone()[0] # type: ignore
         cursor = connection.cursor(dictionary=True)
-        query += " LIMIT %s OFFSET %s"
-        
-        limit = int(parameters["limit"])
-        offset = int(parameters["offset"])
-        params.extend([limit, offset])
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        response = {
-            "total_records": total_records,
-            "rows": rows
-        }
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-  
+        # This may not be the optimal way to handle get method with multiple cases
+        valid_procedures = [
+            "name_only",
+            "staff",
+            "specific_staff",
+        ]
+        if (
+            'procedure' not in parameters 
+            or parameters['procedure'] not in valid_procedures
+        ):
+            raise ValueError("Invalid procedure")
+        elif (parameters['procedure'] == "name_only"):
+            return_body = name_only(cursor)
+        elif (parameters['procedure'] == "staff"):
+            query, params = build_query(parameters)
+            return_body = {}
+            return_body['total_records'] = total_records(cursor, query, params)
+            return_body['staff'] = staff(cursor, query, params, parameters)
+        elif (parameters['procedure'] == "specific_staff"):
+            staff_id = int(parameters['staff_id'])
+            cursor = connection.cursor()
+            return_body = {
+                'aircraft_ids': specific_aircraft_staff(cursor, staff_id),
+                'role_ids': specific_role_staff(cursor,staff_id),
+                'subcategory_ids': specific_staff_subcategories(cursor, staff_id),
+            }
+        status_code = 200
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
-        
-        return {
-            'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-        
+        return_body = f"SQL Error: {e._full_msg}"
+    # Catch other exeptions
+    except Exception as e:
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    return_body = json_response(status_code, return_body)
+    return return_body
 
-# this is when start to build query
-def build_query(parameters):
-    # the base query
+@timer
+def build_query(
+    parameters: dict
+) -> tuple:
+    """
+    Build and return query and params
+    """
     query = """
-    SELECT 
-        staff_id,
-        email,
-        f_name,
-        l_name,
-        created_at,
-        archived
+    SELECT
+        *
     FROM staff
-    WHERE deleted_at is Null
     """
     # define filters if any
     filters = []
     # parameters for binding
     params = []
-    # search for one or many emails/users/authors/staff
+    # search for name
     if 'search' in parameters:
-        filters.append("email LIKE %s")
+        filters.append("staff_name LIKE %s")
         params.append(parameters["search"])
+    # filter based on archived or not
     if 'archived' in parameters:
-        # Ensure archived is a valid value to prevent SQL injection
-        # Add other valid value if necessar
-        valid_value = ["true", "false"]
-        if parameters["archived"] in valid_value:
-            # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
-    
+        filters.append("archived = %s")
+        params.append(parameters["archived"])
+    # filter based on date range when it was added
     if 'created_at' in parameters:
-        created_at = parameters["created_at"].split(',')
-        filters.append("created_at BETWEEN %s AND %s")
+        created_at = parameters["start_at"].split(',')
+        filters.append("start_at BETWEEN %s AND %s")
         params.extend(created_at)
-    
-    # if there is any filter add base query
+    # if there is any filter add to query
     if filters:
-        query += " AND " + " AND ".join(filters)
-   
-    if 'sort_column' in parameters:
-        # Ensure sort_column is a valid column name to prevent SQL injection
-        # Add other valid column names if necessary
-        valid_columns = ["staff_id", "f_name", "l_name", "email", "archived", "created_at"]
-        if parameters["sort_column"] in valid_columns:
-            # asc if true, desk if false
-            order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
-            # in this part must parse as str cannot use binding because sort_column cannot be str
-            query += f" ORDER BY {parameters["sort_column"]} {order}"
-    
+        query += "WHERE " + " AND ".join(filters)
     # finish prepare query and params
-    print(query)
-    print(params)
     return query, params
 
-# create a connect to db
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# for dump json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-# return a list string for filtering, searching, sending
-def get_method_no_parameters():
-    try:
-        # get all of roles names where it is not archived
-        query = "SELECT email from staff WHERE deleted_at IS Null AND archived = false"
-        connection = connect_to_db()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall() 
-        emails = [item[0] for item in response] # type: ignore
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(emails, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-
-def get_specific_staff(cursor, parameters):
-    
-    query = """
-    SELECT 
-        s.staff_id,
-        s.email,
-        s.f_name,
-        s.l_name,
-        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircraft,
-        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
-        GROUP_CONCAT(DISTINCT c.name SEPARATOR ', ') AS categories,
-        GROUP_CONCAT(DISTINCT sc.name SEPARATOR ', ') AS subcategories
-    FROM staff AS s
-    LEFT JOIN aircraft_staff AS au
-    ON au.staff_id = s.staff_id
-    LEFT JOIN aircraft AS a
-    ON a.aircraft_id = au.aircraft_id
-    LEFT JOIN staff_roles AS rs
-    ON rs.staff_id = s.staff_id
-    LEFT JOIN roles AS r
-    ON rs.role_id = r.role_id
-    LEFT JOIN permissions AS p
-    ON p.staff_id = s.staff_id
-    LEFT JOIN categories AS c
-    ON c.category_id = p.category_id
-    LEFT JOIN subcategories AS sc
-    ON sc.category_id = c.category_id
-    WHERE email = %s AND s.deleted_at IS Null
-    GROUP BY s.staff_id
+@timer
+def total_records(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list
+) -> int:
     """
-    params= [parameters["email"]]
+    Return total records
+    """
+    total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
+    print(total_query)
+    print(params)
+    cursor.execute(total_query, params)
+    result = cursor.fetchone()
+    assert isinstance(result, dict)
+    total_records = result['total_records']
+    assert isinstance(total_records, int)
+    return total_records
+
+@timer
+def staff(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list, 
+    parameters: dict
+) -> list:
+    """
+    Return all rows based on pagination
+    """
+    # sort column if need it, default is pk
+    valid_columns = [
+        "staff_id",
+        "staff_name",
+        "archived",
+        "created_at",
+        "updated_at",
+    ]
+    valid_orders = [
+        "ASC",
+        "DESC"
+    ]
+    if (
+        'sort_column' in parameters 
+        and 'order' in parameters 
+        and parameters['sort_column'] in valid_columns 
+        and parameters['order'] in valid_orders
+    ):
+        query += " ORDER BY %s %s"
+        params.append(parameters['sort_column'])
+        params.append(parameters['order'])
+    # pagination
+    query += " LIMIT %s OFFSET %s "
+    params.append(int(parameters["limit"]))
+    params.append(int(parameters["offset"]))
+    # finish query
+    print(query)
+    print(params)
     cursor.execute(query, params)
-    rows = cursor.fetchall()
-    return {
-        'statusCode': 200,
-        'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-        'body': json.dumps(rows, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-    }
+    return cursor.fetchall()
+
+@timer
+def name_only(
+    cursor: MySQLCursorAbstract
+) -> list:
+    """
+    Return id and name only
+    """
+    query = """
+        SELECT
+            staff_id,
+            staff_name
+        FROM staff
+    """
+    cursor.execute(query)
+    return cursor.fetchall()
+
+@timer
+def specific_aircraft_staff(
+    cursor: MySQLCursorAbstract, 
+    staff_id: int
+) -> list:
+    """
+    Return a list of aircraft linked with specific id
+    """
+    query = """
+        SELECT
+            aircraft_id
+        FROM aircraft_staff
+        WHERE staff_id = %s
+    """
+    cursor.execute(query, [staff_id])
+    return cursor.fetchall()
+
+@timer
+def specific_role_staff(
+    cursor: MySQLCursorAbstract, 
+    staff_id: int
+) -> list:
+    """
+    Return a list of roles linked with specific id
+    """
+    query = """
+        SELECT
+            role_id
+        FROM roles_staff
+        WHERE staff_id = %s
+    """
+    cursor.execute(query, [staff_id])
+    return cursor.fetchall()
+
+@timer
+def specific_staff_subcategories(
+    cursor: MySQLCursorAbstract, 
+    staff_id: int
+) -> list:
+    """
+    Return a list of subcategories linked with specific id
+    """
+    query = """
+        SELECT
+            subcategorie_id,
+            access_level_id
+        FROM staff_subcategories
+        WHERE staff_id = %s
+    """
+    cursor.execute(query, [staff_id])
+    return cursor.fetchall()
 
 # ===========================================================================
+parameters = {
+    'procedure': "staff",
+    'limit': "20",
+    'offset': "0"
+}
+get_method(parameters)
