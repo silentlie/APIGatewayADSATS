@@ -1,103 +1,93 @@
-import json
-from mysql.connector import Error
-import mysql.connector
 import os
-from datetime import datetime
+import json
+import mysql.connector
+from mysql.connector import Error
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def post_method(body):
-    connection = None
-    cursor = None
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database",
-        )
-        cursor = connection.cursor()
-        role = body["role"]
-        check_query = "SELECT COUNT(*) FROM roles WHERE role = %s"
-        cursor.execute(check_query, (role,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"Role with name '{role}' already exists.")
-            }
-        role_id = insert_and_get_role_id(cursor, body)
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        # Insert the new record and get the id
+        role_id = insert_role(cursor, body)
+        # Commits the transaction to make the insert operation permanent
+        # If any error is raised, there'll be no commit
         connection.commit()
-
-        if 'staff' in body and body['staff']:
-            staff_ids = get_staff_ids_by_names(cursor, body['staff'])
-            insert_staff_roles(cursor, role_id, staff_ids)
-            connection.commit()
 
         return {
             'statusCode': 200,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps({"role_id": role_id}, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+            'headers': headers(),
+            'body': json.dumps(role_id)
         }
-
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {str(e)}")
+        print(f"Error: {e._full_msg}")
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Error code 409 means conflict in the state of the server
+            error_code = 409
+        else:
+            # Error code 500 means other errors have not been specified
+            error_code = 500
+        
+        return {
+            'statusCode': error_code,
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e._full_msg}")
+        }
+    # Catch other exeptions
+    except Exception as e:
+        print(f"Error: {e}")
         return {
             'statusCode': 500,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-            },
-            'body': json.dumps(str(e))
+            'headers': headers(),
+            'body': json.dumps(f"Error: {e}")
         }
-
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
-        if connection is not None and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
 
-def insert_and_get_role_id(cursor, body):
-    role = body["role"]
-    description = body["description"]
-    archived = body["archived"]
-    created_at = body["created_at"]
+## FUNCTIONS ##
+
+# Insert new record and return id
+def insert_role(cursor, body):
     query = """
-    INSERT INTO roles (role, description, archived, created_at)
+    INSERT INTO roles (role_name, archived, created_at, description)
     VALUES (%s, %s, %s, %s)
     """
-    params = [role, description, archived, created_at]
+    params = [body["role_name"], body["archived"], body["created_at"], body["description"]]
     cursor.execute(query, params)
-
     cursor.execute("SELECT LAST_INSERT_ID()")
-    result = cursor.fetchone()
-    return result[0]
+    role_id = cursor.fetchone()
+    print("Record inserted successfully with ID:", role_id)
+    return role_id
 
-def get_staff_ids_by_names(cursor, emails):
-    format_strings = ','.join(['%s'] * len(emails))
-    query = f"SELECT staff_id FROM staff WHERE email IN ({format_strings})"
-    cursor.execute(query, tuple(emails))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+## FUNCTIONS ##
 
-def insert_staff_roles(cursor, role_id, staff_ids):
-    query = """INSERT INTO staff_roles (staff_id, role_id) 
-               VALUES (%s, %s)"""
-    for staff_id in staff_ids:
-        cursor.execute(query, (staff_id, role_id))
+## HELPERS ##
+# Create a connection to the DB
+def connect_to_db():
+    return mysql.connector.connect(
+        host=os.environ.get('HOST'),
+        user=os.environ.get('USER'),
+        password=os.environ.get('PASSWORD'),
+        database="adsats_database"
+    )
 
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+## HELPERS ##
+#===============================================================================

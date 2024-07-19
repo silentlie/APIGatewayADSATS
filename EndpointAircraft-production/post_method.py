@@ -1,12 +1,20 @@
-from datetime import datetime
-import os
-import json
-import mysql.connector
-from mysql.connector import Error
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
+    MySQLCursorAbstract
+)
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def post_method(body):
+@timer
+def post_method(
+    body: dict
+) -> dict:
+    """
+    Post method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
@@ -18,36 +26,18 @@ def post_method(body):
         # Commits the transaction to make the insert operation permanent
         # If any error is raised, there'll be no commit
         connection.commit()
-
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(aircraft_id)
-        }
+        return_body = aircraft_id
+        status_code = 200
     # Catch SQL exeption
     except Error as e:
-        print(f"SQL Error: {e._full_msg}")
+        return_body = f"SQL Error: {e._full_msg}"
         # Error no 1062 means duplicate name
         if e.errno == 1062:
-            # Error code 409 means conflict in the state of the server
-            error_code = 409
-        else:
-            # Error code 500 means other errors have not been specified
-            error_code = 500
-        
-        return {
-            'statusCode': error_code,
-            'headers': headers(),
-            'body': json.dumps(f"SQL Error: {e._full_msg}")
-        }
+            # Code 409 means conflict in the state of the server
+            status_code = 409
     # Catch other exeptions
     except Exception as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(f"Error: {e.with_traceback}")
-        }
+        return_body = f"SQL Error: {e}"
     # Close cursor and connection
     finally:
         if cursor:
@@ -57,11 +47,18 @@ def post_method(body):
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-## FUNCTIONS ##
-
-# Insert new record and return id
-def insert_aircraft(cursor, body):
+@timer
+def insert_aircraft(
+    cursor: MySQLCursorAbstract,
+    body: dict
+) -> int:
+    """
+    Insert new record and return id
+    """
     query = """
     INSERT INTO aircraft (aircraft_name, archived, created_at, description)
     VALUES (%s, %s, %s, %s)
@@ -70,11 +67,19 @@ def insert_aircraft(cursor, body):
     cursor.execute(query, params)
     cursor.execute("SELECT LAST_INSERT_ID()")
     aircraft_id = cursor.fetchone()
+    assert isinstance(aircraft_id, int)
     print("Record inserted successfully with ID:", aircraft_id)
     return aircraft_id
 
-# Insert into many to many table
-def insert_aircraft_staff(cursor, aircraft_id, staff_ids):
+@timer
+def insert_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    aircraft_id: int,
+    staff_ids: list
+) -> None:
+    """
+    Insert into many to many table
+    """
     insert_query = """
         INSERT INTO aircraft_staff (aircraft_id, staff_id)
         VALUES (%s, %s)
@@ -83,25 +88,4 @@ def insert_aircraft_staff(cursor, aircraft_id, staff_ids):
     cursor.executemany(insert_query, records_to_insert)
     print(cursor.rowcount, " records inserted successfully")
 
-## FUNCTIONS ##
-
-## HELPERS ##
-# Create a connection to the DB
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-
-## HELPERS ##
 #===============================================================================

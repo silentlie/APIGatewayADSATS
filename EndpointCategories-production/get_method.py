@@ -90,7 +90,7 @@ def total_records(cursor, query, params):
     print(total_query)
     print(params)
     cursor.execute(total_query, params)
-    return cursor.fetchall()[0]['total_records']
+    return cursor.fetchone()['total_records']
 
 # return dict of all rows with pagination
 def categories(cursor, query, params, parameters):

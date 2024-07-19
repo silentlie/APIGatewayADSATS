@@ -1,119 +1,148 @@
-from datetime import datetime
-import json
-from mysql.connector import Error
-import mysql.connector
 import os
+import json
+import mysql.connector
+from mysql.connector import Error
+from datetime import datetime
+
+allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
 def get_method(parameters):
-    if not parameters:
-        return get_method_no_parameters()
     try:
-        
         connection = connect_to_db()
-      
-        query, params = build_query(parameters)
-        
-        total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-        cursor = connection.cursor()
-        cursor.execute(total_query, params)
-        total_records = cursor.fetchone()[0] # type: ignore
         cursor = connection.cursor(dictionary=True)
-        
-        query += " LIMIT %s OFFSET %s"
-        # in parameters of method number by default is a str so must convert back to int
-        limit = int(parameters["limit"])
-        offset = int(parameters["offset"])
-        params.extend([limit, offset])
-        
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        response = {
-            "total_records": total_records,
-            "rows": rows
-        }
+        valid_methods = ["name_only", "roles", "specific_role_staff"]
+        if 'method' not in parameters or parameters['method'] not in valid_methods:
+            raise ValueError("Invalid method")
+        elif parameters['method'] == "name_only":
+            response = name_only(cursor)
+        elif (parameters['method'] == "roles"):
+            query, params = build_query(parameters)
+            response = {}
+            response['total_records'] = total_records(cursor, query, params)
+            response['roles'] = roles(cursor, query, params, parameters)
+        elif (parameters['method'] == "specific_role_staff"):
+            role_id = parameters['role_id']
+            cursor = connection.cursor()
+            response = {
+                'staff_ids': specific_role_staff(cursor, role_id)
+            }
+        print(response)
         return {
             'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
         }
-  
+    # Catch SQL exeption
     except Error as e:
         print(f"Error: {e._full_msg}")
-        
         return {
             'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
+            'headers': headers(),
             'body': json.dumps(e._full_msg)
         }
-        
+    
+    except Exception as e:
+        print(f"Error: {e}")
+        return {
+            'statusCode': 500,
+            'headers': headers(),
+            'body': json.dumps(e)
+        }
+
     finally:
         if cursor is not None:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
-# this is when start to build query
+
+## FUNCTIONS ##
+# build query
 def build_query(parameters):
-    # the base query
     query = """
-    SELECT  
-        role_id,
-        role,
-        archived,
-        description,
-        created_at
+    SELECT
+        *
     FROM roles
     """
-    query += " WHERE deleted_at is Null"
     # define filters if any
     filters = []
     # parameters for binding
     params = []
-    # search for name of role
-    if 'role' in parameters:
-        filters.append("role LIKE %s")
-        params.append(parameters["role"])
+    # search for name
+    if 'search' in parameters:
+        filters.append("role_name LIKE %s")
+        params.append(parameters["search"])
     # filter based on archived or not
     if 'archived' in parameters:
-        # Ensure archived is a valid value to prevent SQL injection
-        # Add other valid value if necessar
-        valid_value = ["true", "false"]
-        if parameters["archived"] in valid_value:
-            # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"archived = {parameters["archived"]}")
-    # filter based on date range
+        filters.append("archived = %s")
+        params.append(parameters["archived"])
+    # filter based on date range when it was added
     if 'created_at' in parameters:
         created_at = parameters["start_at"].split(',')
         filters.append("start_at BETWEEN %s AND %s")
         params.extend(created_at)
-    # if there is any filter add base query
+    # if there is any filter add to query
     if filters:
-        query += " AND " + " AND ".join(filters)
-    # if sorting is required
-    if 'sort_column' in parameters:
-        # Ensure sort_column is a valid column name to prevent SQL injection
-        # Add other valid column names if necessary
-        valid_columns = ["role_id", "role", "archived", "description"]
-        if parameters["sort_column"] in valid_columns:
-            # asc if true, desk if false
-            order = 'ASC' if parameters["asc"] == 'true' else 'DESC'
-            # in this part must parse as str cannot use binding because sort_column cannot be str
-            query += f" ORDER BY {parameters["sort_column"]} {order}"
-    
+        query += "WHERE " + " AND ".join(filters)
     # finish prepare query and params
     print(query)
     print(params)
     return query, params
 
-# create a connect to db
+# return dict of total records
+def total_records(cursor, query, params):
+    total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
+    print(total_query)
+    print(params)
+    cursor.execute(total_query, params)
+    return cursor.fetchone()['total_records']
+
+# return dict of all rows with pagination
+def roles(cursor, query, params, parameters):
+    # sort column if need it, default is pk
+    valid_columns = ["role_id", "role_name", "archived", "created_at", "updated_at"]
+    valid_orders = ["ASC", "DESC"]
+    if 'sort_column' in parameters and 'order' in parameters and parameters['sort_column'] in valid_columns and parameters['order'] in valid_orders:
+        query += " ORDER BY %s %s"
+        params.append(parameters['sort_column'])
+        params.append(parameters['order'])
+    # pagination
+    query += " LIMIT %s OFFSET %s "
+    params.append(int(parameters["limit"]))
+    params.append(int(parameters["offset"]))
+    # finish query
+    print(query)
+    print(params)
+    cursor.execute(query, params)
+    return cursor.fetchall()
+
+# return dict of id and name only
+def name_only(cursor):
+    query = """
+    SELECT
+        role_id,
+        role_name
+    FROM roles
+    """
+    cursor.execute(query)
+    return cursor.fetchall()
+
+# return a list of linking records of specific id
+def specific_role_staff(cursor, role_id):
+    query = """
+    SELECT
+        staff_id
+    FROM roles_staff
+    WHERE role_id = %s
+    """
+    cursor.execute(query, [role_id])
+    return [num for num, in cursor.fetchall()]
+
+## FUNCTIONS ##
+
+## HELPERS ##
+# Create a connection to the DB
 def connect_to_db():
     return mysql.connector.connect(
         host=os.environ.get('HOST'),
@@ -121,44 +150,26 @@ def connect_to_db():
         password=os.environ.get('PASSWORD'),
         database="adsats_database"
     )
-# for dump json format
+
+# Response headers
+def headers():
+    return {
+        'Access-Control-Allow-Headers': '*',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': allowed_headers
+    }
+
+# for dump datetime json format
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
-    
-# return a list string for filtering, searching, sending
-def get_method_no_parameters():
-    try:
-        # get all of roles names where it is not archived
-        query = "SELECT role from roles"
-        query += " WHERE archived = false"
-        query += " AND deleted_at IS null"
-        connection = connect_to_db()
-        cursor = connection.cursor()
-        cursor.execute(query)
-        response = cursor.fetchall() 
-        roles = [item[0] for item in response] # type: ignore
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(roles, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-    except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-    
-# ===========================================================================
+
+## HELPERS ##
+#===============================================================================
+parameters = {
+    'method': "specific_role_staff",
+    'role_id': 1
+}
+get_method(parameters)

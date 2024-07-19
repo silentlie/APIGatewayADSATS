@@ -12,8 +12,8 @@ def lambda_handler(event, context):
     parameters = event.get("queryStringParameters")
     
     print(f"Method: {method}")
-    print(f"Body: {body_str}")
     print(f"Parameters: {parameters}")
+    print(f"Body: {body_str}")
     
     body = {}
     if isinstance(body_str, str):

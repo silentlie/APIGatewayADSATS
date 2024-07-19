@@ -1,11 +1,20 @@
-import os
-import json
-import mysql.connector
-from mysql.connector import Error
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
+    MySQLCursorAbstract
+)
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def patch_method(body):
+@timer
+def patch_method(
+    body: dict
+) -> dict:
+    """
+    Patch method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
@@ -27,36 +36,18 @@ def patch_method(body):
         if 'staff_ids' in body:
             insert_aircraft_staff(cursor, body['staff_ids'], aircraft_id)
         connection.commit()
-
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(aircraft_id)
-        }
+        return_body = aircraft_id
+        status_code = 200
     # Catch SQL exeption
     except Error as e:
-        print(f"SQL Error: {e._full_msg}")
+        return_body = f"SQL Error: {e._full_msg}"
         # Error no 1062 means duplicate name
         if e.errno == 1062:
-            # Error code 409 means conflict in the state of the server
-            error_code = 409
-        else:
-            # Error code 500 means other errors have not been specified
-            error_code = 500
-        
-        return {
-            'statusCode': error_code,
-            'headers': headers(),
-            'body': json.dumps(f"SQL Error: {e._full_msg}")
-        }
+            # Code 409 means conflict in the state of the server
+            status_code = 409
     # Catch other exeptions
     except Exception as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(f"Error: {e}")
-        }
+        return_body = f"SQL Error: {e}"
     # Close cursor and connection
     finally:
         if cursor:
@@ -66,11 +57,19 @@ def patch_method(body):
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-## FUNCTIONS ##
-
-# Update name
-def update_aircraft_name(cursor, aircraft_name, aircraft_id):
+@timer
+def update_aircraft_name(
+    cursor: MySQLCursorAbstract,
+    aircraft_name: str,
+    aircraft_id: int
+) -> None:
+    """
+    Update name
+    """
     update_query = """
         UPDATE aircraft
         SET aircraft_name = %s
@@ -79,8 +78,16 @@ def update_aircraft_name(cursor, aircraft_name, aircraft_id):
     params = [aircraft_name, aircraft_id]
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
-# Update archived or not
-def update_archived(cursor, archived, aircraft_id):
+
+@timer
+def update_archived(
+    cursor: MySQLCursorAbstract,
+    archived: int,
+    aircraft_id: int
+) -> None:
+    """
+    Update archived or not
+    """
     update_query = """
         UPDATE aircraft
         SET archived = %s
@@ -89,8 +96,16 @@ def update_archived(cursor, archived, aircraft_id):
     params = [archived, aircraft_id]
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
-# Update description
-def update_description(cursor, description, aircraft_id):
+
+@timer
+def update_description(
+    cursor: MySQLCursorAbstract,
+    description: str,
+    aircraft_id: int
+) -> None:
+    """
+    Update description
+    """
     update_query = """
         UPDATE aircraft
         SET description = %s
@@ -99,16 +114,32 @@ def update_description(cursor, description, aircraft_id):
     params = [description, aircraft_id]
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
-# Delete linking records of specific id
-def delete_aircraft_staff(cursor, aircraft_id):
+
+@timer
+def delete_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    aircraft_id: int
+) -> None:
+    """
+    Delete linking records of specific id
+    """
     delete_query = """
         DELETE FROM aircraft_staff
         WHERE aircraft_id = %s
     """
     params = [aircraft_id]
     cursor.execute(delete_query, params)
-# Insert into many to many table
-def insert_aircraft_staff(cursor, staff_ids, aircraft_id):
+    print(cursor.rowcount, " records deleted successfully")
+
+@timer
+def insert_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    staff_ids: list,
+    aircraft_id :int
+):
+    """
+    Insert into many to many table
+    """
     # Delete before insert
     delete_aircraft_staff(cursor, aircraft_id)
     insert_query = """
@@ -119,25 +150,4 @@ def insert_aircraft_staff(cursor, staff_ids, aircraft_id):
     cursor.executemany(insert_query, records_to_insert)
     print(cursor.rowcount, " records inserted successfully")
 
-## FUNCTIONS ##
-
-## HELPERS ##
-# Create a connection to the DB
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-
-## HELPERS ##
 #===============================================================================
