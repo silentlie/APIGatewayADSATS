@@ -1,11 +1,20 @@
-import os
-import json
-import mysql.connector
-from mysql.connector import Error
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
+    MySQLCursorAbstract
+)
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def patch_method(body):
+@timer
+def patch_method(
+    body: dict
+) -> dict:
+    """
+    Patch method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
@@ -22,36 +31,19 @@ def patch_method(body):
         # Update description value if present in body
         if 'description' in body:
             update_description(cursor, body['description'], category_id)
-
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(category_id)
-        }
+        connection.commit()
+        return_body = category_id
+        status_code = 200
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
+        return_body = f"SQL Error: {e._full_msg}"
         # Error no 1062 means duplicate name
         if e.errno == 1062:
-            # Error code 409 means conflict in the state of the server
-            error_code = 409
-        else:
-            # Error code 500 means other errors have not been specified
-            error_code = 500
-        
-        return {
-            'statusCode': error_code,
-            'headers': headers(),
-            'body': json.dumps(f"Error: {e._full_msg}")
-        }
+            # Code 409 means conflict in the state of the server
+            status_code = 409
     # Catch other exeptions
     except Exception as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(f"Error: {e}")
-        }
+        return_body = f"SQL Error: {e}"
     # Close cursor and connection
     finally:
         if cursor:
@@ -61,11 +53,19 @@ def patch_method(body):
             cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-## FUNCTIONS ##
-
-# Update name
-def update_category_name(cursor, category_name, category_id):
+@timer
+def update_category_name(
+    cursor: MySQLCursorAbstract,
+    category_name: str,
+    category_id: int
+) -> None:
+    """
+    Update name
+    """
     update_query = """
         UPDATE categories
         SET category_name = %s
@@ -74,8 +74,17 @@ def update_category_name(cursor, category_name, category_id):
     params = [category_name, category_id]
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
-# Update archived or not
-def update_archived(cursor, archived, category_id):
+
+
+@timer
+def update_archived(
+    cursor: MySQLCursorAbstract,
+    archived: int,
+    category_id: int
+) -> None:
+    """
+    Update archived or not
+    """
     update_query = """
         UPDATE categories
         SET archived = %s
@@ -84,8 +93,16 @@ def update_archived(cursor, archived, category_id):
     params = [archived, category_id]
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
-# Update description
-def update_description(cursor, description, category_id):
+
+@timer
+def update_description(
+    cursor: MySQLCursorAbstract,
+    description: str,
+    category_id: int
+) -> None:
+    """
+    Update description
+    """
     update_query = """
         UPDATE categories
         SET description = %s
@@ -95,25 +112,4 @@ def update_description(cursor, description, category_id):
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
 
-## FUNCTIONS ##
-
-## HELPERS ##
-# Create a connection to the DB
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-
-## HELPERS ##
 #===============================================================================

@@ -2,13 +2,18 @@ from helper import (
     connect_to_db,
     json_response,
     timer,
-    Error,
-    MySQLCursorAbstract
+    Error
 )
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def delete_method(body):
+@timer
+def delete_method(
+    body: dict
+) -> dict:
+    """
+    Delete method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)

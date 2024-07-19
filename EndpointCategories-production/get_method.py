@@ -1,12 +1,20 @@
-import os
-import json
-import mysql.connector
-from mysql.connector import Error
-from datetime import datetime
+from helper import (
+    connect_to_db, 
+    json_response, 
+    timer, 
+    Error, 
+    MySQLCursorAbstract
+)
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def get_method(parameters):
+@timer
+def get_method(
+    parameters: dict
+) -> dict:
+    """
+    Get method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
@@ -14,46 +22,39 @@ def get_method(parameters):
         if 'method' not in parameters or parameters['method'] not in valid_methods:
             raise ValueError("Invalid method")
         elif parameters['method'] == "name_only":
-            response = name_only(cursor)
+            return_body = name_only(cursor)
         elif (parameters['method'] == "categories"):
             query, params = build_query(parameters)
-            response = {}
-            response['total_records'] = total_records(cursor, query, params)
-            response['categories'] = categories(cursor, query, params, parameters)
-        print(response)
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
+            return_body = {}
+            return_body['total_records'] = total_records(cursor, query, params)
+            return_body['categories'] = categories(cursor, query, params, parameters)
+        status_code = 200
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(e._full_msg)
-        }
-    
+        return_body = f"SQL Error: {e._full_msg}"
+    # Catch other exeptions
     except Exception as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(e)
-        }
-
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
             print("MySQL cursor is closed")
         if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-## FUNCTIONS ##
-# build query
-def build_query(parameters):
+@timer
+def build_query(
+    parameters: dict
+) -> tuple:
+    """
+    Build query and params
+    """
     query = """
     SELECT
         *
@@ -84,16 +85,35 @@ def build_query(parameters):
     print(params)
     return query, params
 
-# return dict of total records
-def total_records(cursor, query, params):
+@timer
+def total_records(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list
+) -> int:
+    """
+    Return total records
+    """
     total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
     print(total_query)
     print(params)
     cursor.execute(total_query, params)
-    return cursor.fetchone()['total_records']
+    result = cursor.fetchone()
+    assert isinstance(result, dict)
+    total_records = result['total_records']
+    assert isinstance(total_records, int)
+    return total_records
 
-# return dict of all rows with pagination
-def categories(cursor, query, params, parameters):
+@timer
+def categories(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list, 
+    parameters: dict
+) -> list:
+    """
+    Return all rows based on pagination
+    """
     # sort column if need it, default is pk
     valid_columns = ["category_id", "category_name", "archived", "created_at", "updated_at"]
     valid_orders = ["ASC", "DESC"]
@@ -111,8 +131,13 @@ def categories(cursor, query, params, parameters):
     cursor.execute(query, params)
     return cursor.fetchall()
 
-# return dict of id and name only
-def name_only(cursor):
+@timer
+def name_only(
+    cursor: MySQLCursorAbstract
+) -> list:
+    """
+    Return id and name only
+    """
     query = """
     SELECT
         category_id,
@@ -122,32 +147,4 @@ def name_only(cursor):
     cursor.execute(query)
     return cursor.fetchall()
 
-## FUNCTIONS ##
-
-## HELPERS ##
-# Create a connection to the DB
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-
-# for dump datetime json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-## HELPERS ##
 #===============================================================================
