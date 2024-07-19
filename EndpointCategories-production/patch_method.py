@@ -19,15 +19,12 @@ def patch_method(
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         category_id = body['category_id']
-        
         # Update name if present in body
         if 'category name' in body:
             update_category_name(cursor,  body['category_name'],category_id)
-
         # Update archived value if present in body
         if 'archived' in body:
             update_archived(cursor, body['archived'], category_id)
-        
         # Update description value if present in body
         if 'description' in body:
             update_description(cursor, body['description'], category_id)

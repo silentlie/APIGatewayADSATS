@@ -18,16 +18,24 @@ def get_method(
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        valid_methods = ["name_only", "categories"]
-        if 'method' not in parameters or parameters['method'] not in valid_methods:
-            raise ValueError("Invalid method")
-        elif parameters['method'] == "name_only":
+        # This may not be the optimal way to handle get method with multiple cases
+        valid_procedures = [
+            "name_only",
+            "categories",
+        ]
+        if (
+            'procedure' not in parameters 
+            or parameters['procedure'] not in valid_procedures
+        ):
+            raise ValueError("Invalid procedure")
+        elif (parameters['procedure'] == "name_only"):
             return_body = name_only(cursor)
-        elif (parameters['method'] == "categories"):
+        elif (parameters['procedure'] == "categories"):
             query, params = build_query(parameters)
             return_body = {}
             return_body['total_records'] = total_records(cursor, query, params)
             return_body['categories'] = categories(cursor, query, params, parameters)
+        
         status_code = 200
     # Catch SQL exeption
     except Error as e:
@@ -53,7 +61,7 @@ def build_query(
     parameters: dict
 ) -> tuple:
     """
-    Build query and params
+    Build and return query and params
     """
     query = """
     SELECT
@@ -81,8 +89,6 @@ def build_query(
     if filters:
         query += "WHERE " + " AND ".join(filters)
     # finish prepare query and params
-    print(query)
-    print(params)
     return query, params
 
 @timer
@@ -115,9 +121,23 @@ def categories(
     Return all rows based on pagination
     """
     # sort column if need it, default is pk
-    valid_columns = ["category_id", "category_name", "archived", "created_at", "updated_at"]
-    valid_orders = ["ASC", "DESC"]
-    if 'sort_column' in parameters and 'order' in parameters and parameters['sort_column'] in valid_columns and parameters['order'] in valid_orders:
+    valid_columns = [
+        "category_id",
+        "category_name",
+        "archived",
+        "created_at",
+        "updated_at"
+    ]
+    valid_orders = [
+        "ASC",
+        "DESC"
+    ]
+    if (
+        'sort_column' in parameters 
+        and 'order' in parameters 
+        and parameters['sort_column'] in valid_columns 
+        and parameters['order'] in valid_orders
+    ):
         query += " ORDER BY %s %s"
         params.append(parameters['sort_column'])
         params.append(parameters['order'])

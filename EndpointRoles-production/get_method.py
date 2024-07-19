@@ -1,19 +1,34 @@
-import os
-import json
-import mysql.connector
-from mysql.connector import Error
-from datetime import datetime
+from helper import (
+    connect_to_db, 
+    json_response, 
+    timer, 
+    Error, 
+    MySQLCursorAbstract
+)
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
-
-def get_method(parameters):
+@timer
+def get_method(
+    parameters: dict
+) -> dict:
+    """
+    Get method
+    """
+    return_body = None
+    status_code = 500
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        valid_methods = ["name_only", "roles", "specific_role_staff"]
-        if 'method' not in parameters or parameters['method'] not in valid_methods:
+        valid_methods = [
+            "name_only",
+            "roles",
+            "specific_role_staff"
+        ]
+        if (
+            'method' not in parameters 
+            or parameters['method'] not in valid_methods
+        ):
             raise ValueError("Invalid method")
-        elif parameters['method'] == "name_only":
+        elif (parameters['method'] == "name_only"):
             response = name_only(cursor)
         elif (parameters['method'] == "roles"):
             query, params = build_query(parameters)
@@ -26,40 +41,33 @@ def get_method(parameters):
             response = {
                 'staff_ids': specific_role_staff(cursor, role_id)
             }
-        print(response)
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
+        status_code = 200
     # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(e._full_msg)
-        }
-    
+        return_body = f"SQL Error: {e._full_msg}"
+    # Catch other exeptions
     except Exception as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(e)
-        }
-
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
             print("MySQL cursor is closed")
         if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-## FUNCTIONS ##
-# build query
-def build_query(parameters):
+@timer
+def build_query(
+    parameters: dict
+) -> tuple:
+    """
+    Build and return query and params
+    """
     query = """
     SELECT
         *
@@ -90,20 +98,53 @@ def build_query(parameters):
     print(params)
     return query, params
 
-# return dict of total records
-def total_records(cursor, query, params):
+@timer
+def total_records(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list
+) -> int:
+    """
+    Return total records
+    """
     total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
     print(total_query)
     print(params)
     cursor.execute(total_query, params)
-    return cursor.fetchone()['total_records']
+    result = cursor.fetchone()
+    assert isinstance(result, dict)
+    total_records = result['total_records']
+    assert isinstance(total_records, int)
+    return total_records
 
-# return dict of all rows with pagination
-def roles(cursor, query, params, parameters):
+@timer
+def roles(
+    cursor: MySQLCursorAbstract, 
+    query: str, 
+    params: list, 
+    parameters: dict
+) -> list:
+    """
+    Return all rows based on pagination
+    """
     # sort column if need it, default is pk
-    valid_columns = ["role_id", "role_name", "archived", "created_at", "updated_at"]
-    valid_orders = ["ASC", "DESC"]
-    if 'sort_column' in parameters and 'order' in parameters and parameters['sort_column'] in valid_columns and parameters['order'] in valid_orders:
+    valid_columns = [
+        "role_id",
+        "role_name",
+        "archived",
+        "created_at",
+        "updated_at"
+    ]
+    valid_orders = [
+        "ASC",
+        "DESC"
+    ]
+    if (
+        'sort_column' in parameters 
+        and 'order' in parameters 
+        and parameters['sort_column'] in valid_columns 
+        and parameters['order'] in valid_orders
+    ):
         query += " ORDER BY %s %s"
         params.append(parameters['sort_column'])
         params.append(parameters['order'])
@@ -117,8 +158,13 @@ def roles(cursor, query, params, parameters):
     cursor.execute(query, params)
     return cursor.fetchall()
 
-# return dict of id and name only
-def name_only(cursor):
+@timer
+def name_only(
+    cursor: MySQLCursorAbstract,
+) -> list:
+    """
+    Return id and name only
+    """
     query = """
     SELECT
         role_id,
@@ -128,8 +174,13 @@ def name_only(cursor):
     cursor.execute(query)
     return cursor.fetchall()
 
-# return a list of linking records of specific id
-def specific_role_staff(cursor, role_id):
+def specific_role_staff(
+    cursor: MySQLCursorAbstract,
+    role_id: int,
+) -> list:
+    """
+    Return a list of staff linked with specific id
+    """
     query = """
     SELECT
         staff_id
@@ -139,37 +190,9 @@ def specific_role_staff(cursor, role_id):
     cursor.execute(query, [role_id])
     return [num for num, in cursor.fetchall()]
 
-## FUNCTIONS ##
-
-## HELPERS ##
-# Create a connection to the DB
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
-    )
-
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-
-# for dump datetime json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-## HELPERS ##
 #===============================================================================
-parameters = {
-    'method': "specific_role_staff",
-    'role_id': 1
-}
-get_method(parameters)
+# parameters = {
+#     'method': "specific_role_staff",
+#     'role_id': 1
+# }
+# get_method(parameters)

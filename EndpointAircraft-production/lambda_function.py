@@ -2,7 +2,7 @@ from post_method import post_method
 from get_method import get_method
 from patch_method import patch_method
 from delete_method import delete_method
-from helper import json_response, timer, parse_body, Any
+from helper import json_response, timer, parse_body
 
 @timer
 def lambda_handler(

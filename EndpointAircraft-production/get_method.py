@@ -18,6 +18,7 @@ def get_method(
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
+        # This may not be the optimal way to handle get method with multiple cases
         valid_procedures = [
             "name_only",
             "aircraft",
