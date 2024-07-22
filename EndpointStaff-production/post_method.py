@@ -1,144 +1,161 @@
-import json
-from mysql.connector import Error
-import mysql.connector
-import os
-from datetime import datetime
-def post_method(body):
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
+    MySQLCursorAbstract
+)
+
+@timer
+def post_method(
+    body: dict
+) -> dict:
+    """
+    Post method
+    """
+    return_body = None
+    status_code = 500
     try:
-        connection = mysql.connector.connect(
-            host= os.environ.get('HOST'),
-            user= os.environ.get('USER'),
-            password= os.environ.get('PASSWORD'),
-            database= "adsats_database",
-        )
-        cursor = connection.cursor()
-        check_query = "SELECT COUNT(*) FROM staff WHERE email = %s"
-        email = body["email"]
-        cursor.execute(check_query, (email,))
-        result = cursor.fetchone()
-
-        if result[0] > 0: # type: ignore
-            return {
-                'statusCode': 400,
-                'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-                'body': json.dumps(f"staff with email '{email}' already exists.")
-            }
-        print("finish check_query")
-        staff_id = insert_and_get_staff_id(cursor, body)
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        # Insert the new record and get the id
+        staff_id = insert_staff(cursor, body)
+        # Add linking aircraft if any into the table
+        if 'aircraft_ids' in body:
+            insert_aircraft_staff(cursor, staff_id, body['aircraft_ids'])
+        # Add linking role if any into the table
+        if 'role_ids' in body:
+            insert_roles_staff(cursor, staff_id, body['role_ids'])
+        # Add linking subcategories if any into the table
+        if 'subcategory_ids' in body:
+            insert_staff_subcategories(cursor, staff_id, body['subcategory_ids'])
+        # Commits the transaction to make the insert operation permanent
+        # If any error is raised, there'll be no commit
         connection.commit()
-        print("finish staff_id")
-        if 'aircraft' in body:
-            aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
-            insert_staff_aircraft(cursor, staff_id, aircraft_ids)
-            connection.commit()
-        
-        if 'roles' in body:
-            role_ids = get_role_ids_by_names(cursor, body['roles'])
-            insert_staff_roles(cursor, staff_id, role_ids)
-            connection.commit()
-
-        if 'categories' in body:
-            category_ids = get_category_ids_by_names(cursor, body['categories'])
-            insert_permissions(cursor, staff_id, category_ids)
-            connection.commit()
-
-        return {
-            'statusCode': 200,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(staff_id, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
-  
+        return_body = staff_id
+        status_code = 200
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e._full_msg}")
-        
-        return {
-            'statusCode': 500,
-            'headers': {
-                    'Access-Control-Allow-Headers': '*',
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-                },
-            'body': json.dumps(e._full_msg)
-        }
-        
+        return_body = f"SQL Error: {e._full_msg}"
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Code 409 means conflict in the state of the server
+            status_code = 409
+    # Catch other exeptions
+    except Exception as e:
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
-        if cursor is not None:
+        if cursor:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    return json_response(status_code, return_body)
 
-def insert_and_get_staff_id(cursor, body):
-    # required
-    f_name = body["f_name"]
-    # required
-    l_name = body["l_name"]
-    # required
-    email = body["email"]
-    # required
-    archived = body["archived"]
-
-    created_at = body["created_at"]
-
-    query = """
-    INSERT INTO staff (f_name, l_name, email, archived, created_at, deleted_at) VALUES (%s, %s, %s, %s, %s, Null)
+@timer
+def insert_staff(
+    cursor: MySQLCursorAbstract,
+    body: dict
+) -> int:
     """
-    params = [f_name, l_name, email, archived, created_at]
+    Insert new record and return id
+    """
+    query = """
+    INSERT INTO staff (staff_name, email, archived, created_at, updated_at)
+    VALUES (%s, %s, %s, %s, %s)
+    """
+    params = [
+        body["staff_name"],
+        body["email"],
+        body["archived"],
+        body["created_at"],
+        body["updated_at"]
+    ]
     cursor.execute(query, params)
-    
-    query = "SELECT staff_id FROM staff WHERE email = %s"
-    cursor.execute(query, (email,))
-    result = cursor.fetchone()
-    print(result)
-    return result[0]
+    cursor.execute("SELECT LAST_INSERT_ID()")
+    staff_id = cursor.fetchone()
+    assert isinstance(staff_id, int)
+    print("Record inserted successfully with ID:", staff_id)
+    return staff_id
 
-def get_role_ids_by_names(cursor, roles):
-    format_strings = ','.join(['%s'] * len(roles))
-    query = f"SELECT role_id FROM roles WHERE role IN ({format_strings})"
-    cursor.execute(query, tuple(roles))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+@timer
+def insert_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    staff_id: int,
+    aircraft_ids: list,
+) -> None:
+    """
+    Insert into many to many table
+    """
+    insert_query = """
+        INSERT INTO aircraft_staff (aircraft_id, staff_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [
+        (aircraft_id, staff_id) 
+        for aircraft_id in aircraft_ids
+    ]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
 
-def get_aircraft_ids_by_names(cursor, aircraft):
-    format_strings = ','.join(['%s'] * len(aircraft))
-    query = f"SELECT aircraft_id FROM aircraft WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(aircraft))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+@timer
+def insert_roles_staff(
+    cursor: MySQLCursorAbstract,
+    staff_id: int,
+    roles_ids: list,
+) -> None:
+    """
+    Insert into many to many table
+    """
+    insert_query = """
+        INSERT INTO roles_staff (role_id, staff_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [
+        (role_id, staff_id) 
+        for role_id in roles_ids
+    ]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
 
-def get_category_ids_by_names(cursor, categories):
-    format_strings = ','.join(['%s'] * len(categories))
-    query = f"SELECT category_id FROM categories WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(categories))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+@timer
+def insert_staff_subcategories(
+    cursor: MySQLCursorAbstract,
+    staff_id: int,
+    subcategory_ids: dict,
+) -> None:
+    """
+    Inserts records into the `staff_subcategories` table to create associations between `staff` and `subcategories`
+    with specific `access levels`.
 
-def insert_staff_roles(cursor, staff_id, role_ids):
-    query = "INSERT INTO staff_roles (`staff_id`, `role_id`) VALUES (%s, %s)"
-    for role_id in role_ids:
-        cursor.execute(query, (staff_id, role_id))
+    Parameters:
+    - `db_cursor` (`MySQLCursorAbstract`): The MySQL cursor object used to execute the query.
+    - `staff_id` (`int`): The ID of the staff member.
+    - `subcategory_ids` (`dict`): A dictionary where the keys are subcategory IDs and the values are access level IDs.
 
-def insert_staff_aircraft(cursor, staff_id, aircraft_ids):
-    query = "INSERT INTO aircraft_staff (`aircraft_id`, `staff_id`) VALUES (%s, %s)"
-    for aircraft_id in aircraft_ids:
-        cursor.execute(query, (aircraft_id, staff_id))
+    Returns:
+    - None
 
-def insert_permissions(cursor, staff_id, category_ids):
-    query = "INSERT INTO permissions (`category_id`, `staff_id`) VALUES (Null, %s, %s)"
-    for category_id in category_ids:
-        cursor.execute(query, (category_id, staff_id))
+    Raises:
+    - `MySQL Error`: If an error occurs during the insertion.
+    """
+    insert_query = """
+        INSERT INTO staff_subcategories (
+            staff_id, 
+            subcategory_id, 
+            access_level_id 
+        )
+        VALUES (%s, %s, %s)
+    """
+    records_to_insert = [
+        (staff_id, subcategory_id, access_level_id)
+        for subcategory_id, access_level_id 
+        in subcategory_ids.items()
+    ]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
 
-# for dump json format
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+#===============================================================================

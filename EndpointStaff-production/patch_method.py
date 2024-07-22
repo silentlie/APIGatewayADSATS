@@ -1,188 +1,239 @@
-import mysql.connector
-import os
-import json
-from mysql.connector import Error
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
+    MySQLCursorAbstract
+)
 
-def patch_method(body):
-    connection = None
-    cursor = None
+@timer
+def patch_method(
+    body: dict
+) -> dict:
+    """
+    Patch method
+    """
+    return_body = None
+    status_code = 500
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+        staff_id = body['staff_id']
         
-        staff_id = body.get('staff_id')
-        
+        # Update name if present in body
+        if 'staff_name' in body:
+            update_staff_name(cursor,  body['staff_name'],staff_id)
+
+        # Update archived value if present in body
         if 'archived' in body:
-            update_archived_value(cursor, staff_id, body['archived'])
-            connection.commit()
-
-        if 'f_name' in body or 'l_name' in body or 'email' in body:
-            update_staff(cursor, body, staff_id)
-            connection.commit()
-            
-        if 'roles' in body:
-            delete_role_value(cursor, staff_id)
-            connection.commit()
-            role_ids = select_role_id(cursor, body['roles'])
-            insert_new_roles(cursor, staff_id, role_ids)
-            connection.commit()
-            
-        if 'aircraft' in body:
-            delete_aircraft_value(cursor, staff_id)
-            connection.commit()
-            aircraft_ids = select_aircraft_id(cursor,body['aircraft'])
-            insert_new_aircraft(cursor, staff_id, aircraft_ids )
-            connection.commit()
-            
-        if 'categories' in body:
-            delete_permission_value(cursor, staff_id)
-            connection.commit()
-            category_ids = select_category_id(cursor,   body['categories'])
-            insert_new_permissions(cursor, staff_id, category_ids)
-            connection.commit()
-
+            update_archived(cursor, body['archived'], staff_id)
+        
+        # Update description value if present in body
+        if 'description' in body:
+            update_description(cursor, body['description'], staff_id)
+        
+        # Delete existing records then insert new ones if 'aircraft_ids' is in body
+        if 'aircraft_ids' in body:
+            insert_aircraft_staff(cursor, body['staff_ids'], staff_id)
+        
+        # Delete existing records then insert new ones if 'aircraft_ids' is in body
+        if 'role_ids' in body:
+            insert_roles_staff(cursor, body['role_ids'], staff_id)
+        
+        # Delete existing records then insert new ones if 'aircraft_ids' is in body
+        if 'subcategory_ids' in body:
+            insert_staff_subcategories(cursor, body['subcategory_ids'], staff_id)
+        connection.commit()
+        return_body = staff_id
+        status_code = 200
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({"error": str(e)})
-        }
+        return_body = f"SQL Error: {e._full_msg}"
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Code 409 means conflict in the state of the server
+            status_code = 409
+    # Catch other exeptions
+    except Exception as e:
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps(staff_id)
-    }
-
-def update_staff(cursor, body, staff_id):
-    f_name = body["f_name"]
-    l_name = body["l_name"]
-    email = body["email"]
-
+@timer
+def update_staff_name(
+    cursor: MySQLCursorAbstract,
+    staff_name: str,
+    staff_id: int
+) -> None:
+    """
+    Update name
+    """
     update_query = """
         UPDATE staff
-        SET f_name = %s,
-            l_name = %s,
-            email = %s
+        SET staff_name = %s
         WHERE staff_id = %s
     """
-    params = [f_name, l_name, email, staff_id]
+    params = [staff_name, staff_id]
     cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 
-def update_archived_value(cursor, staff_id, archived):
-    query = """
-        UPDATE staff 
+@timer
+def update_archived(
+    cursor: MySQLCursorAbstract,
+    archived: int,
+    staff_id: int
+) -> None:
+    """
+    Update archived or not
+    """
+    update_query = """
+        UPDATE staff
         SET archived = %s
         WHERE staff_id = %s
     """
     params = [archived, staff_id]
-    cursor.execute(query, params)
+    cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
 
-def delete_role_value(cursor, staff_id):
-    query = """
-            DELETE FROM staff_roles
-            WHERE staff_id = %s
-            """
+@timer
+def update_description(
+    cursor: MySQLCursorAbstract,
+    description: str,
+    staff_id: int
+) -> None:
+    """
+    Update description
+    """
+    update_query = """
+        UPDATE staff
+        SET description = %s
+        WHERE staff_id = %s
+    """
+    params = [description, staff_id]
+    cursor.execute(update_query, params)
+    print(cursor.rowcount, " records updated successfully")
+
+@timer
+def delete_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    staff_id: int
+) -> None:
+    """
+    Delete linking records of specific id
+    """
+    delete_query = """
+        DELETE FROM aircraft_staff
+        WHERE staff_id = %s
+    """
     params = [staff_id]
-    cursor.execute(query, params)
-    
-def select_role_id(cursor, roles):
-    query = """
-                SELECT role_id
-                FROM roles
-                WHERE role = %s
-            """
-    role_ids = []
-    for role_name in roles:
-        cursor.execute(query, [role_name])
-        result = cursor.fetchone()  
-        if result:
-            role_ids.append(result[0])  
-    return role_ids
+    cursor.execute(delete_query, params)
+    print(cursor.rowcount, " records deleted successfully")
 
-def insert_new_roles(cursor, staff_id, roles):
-    query = """
-            INSERT INTO staff_roles (role_id, staff_id)
-            VALUES (%s, %s)
-            """
-    for role in roles:
-        params = [role, staff_id]
-        cursor.execute(query, params)  
+@timer
+def insert_aircraft_staff(
+    cursor: MySQLCursorAbstract,
+    aircraft_ids: list,
+    staff_id :int
+):
+    """
+    Insert into many to many table
+    """
+    # Delete before insert
+    delete_aircraft_staff(cursor, staff_id)
+    insert_query = """
+        INSERT INTO aircraft_staff (aircraft_id, staff_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [(aircraft_id, staff_id) for aircraft_id in aircraft_ids]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
 
-def delete_aircraft_value(cursor, staff_id):
-    query = """
-            DELETE FROM aircraft_staff
-            WHERE staff_id = %s
-            """
+@timer
+def delete_roles_staff(
+    cursor: MySQLCursorAbstract,
+    staff_id: int
+) -> None:
+    """
+    Delete linking records of specific id
+    """
+    delete_query = """
+        DELETE FROM roles_staff
+        WHERE staff_id = %s
+    """
     params = [staff_id]
-    cursor.execute(query, params)
-    
-def select_aircraft_id(cursor, aircraft):
-    query = """
-                SELECT aircraft_id
-                FROM aircraft
-                WHERE name = %s
-            """
-    aircraft_ids = []
-    for name in aircraft:
-        cursor.execute(query, [name])
-        # name of aircrfats are unique
-        result = cursor.fetchone()  
-        if result:
-            aircraft_ids.append(result[0])  
-    return aircraft_ids
-    
-def insert_new_aircraft(cursor, staff_id, aircraft):
-    query = """
-            INSERT INTO aircraft_staff (aircraft_id, staff_id)
-            VALUES (%s, %s)
-            """
-    for aircraft in aircraft:
-        params = [aircraft, staff_id]
-        cursor.execute(query, params)      
+    cursor.execute(delete_query, params)
+    print(cursor.rowcount, " records deleted successfully")
 
-def delete_permission_value(cursor, staff_id):
-    query = """
-            DELETE FROM permissions
-            WHERE staff_id = %s
-            """
+@timer
+def insert_roles_staff(
+    cursor: MySQLCursorAbstract,
+    role_ids: list,
+    staff_id :int
+):
+    """
+    Insert into many to many table
+    """
+    # Delete before insert
+    delete_roles_staff(cursor, staff_id)
+    insert_query = """
+        INSERT INTO roles_staff (role_id, staff_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [(role_id, staff_id) for role_id in role_ids]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
+
+@timer
+def delete_staff_subcategories(
+    cursor: MySQLCursorAbstract,
+    staff_id: int
+) -> None:
+    """
+    Delete linking records of specific id
+    """
+    delete_query = """
+        DELETE FROM staff_subcategories
+        WHERE staff_id = %s
+    """
     params = [staff_id]
-    cursor.execute(query, params)
+    cursor.execute(delete_query, params)
+    print(cursor.rowcount, " records deleted successfully")
 
-def select_category_id(cursor, categories):
-    query = """
-                SELECT category_id
-                FROM categories
-                WHERE name = %s
-            """
-    category_ids = []
-    for name in categories:
-        cursor.execute(query, [name])
-        result = cursor.fetchone()  
-        if result:
-            category_ids.append(result[0])  
-    return category_ids
-    
-def insert_new_permissions(cursor, staff_id, categories):
-    query = """
-            INSERT INTO permissions (category_id, staff_id)
-            VALUES (%s, %s)
-            """
-    for category in categories:
-        params = [category, staff_id]
-        cursor.execute(query, params)
+@timer
+def insert_staff_subcategories(
+    cursor: MySQLCursorAbstract,
+    subcategory_ids: dict,
+    staff_id :int
+):
+    """
+    Insert into many to many table
+    """
+    # Delete before insert
+    delete_aircraft_staff(cursor, staff_id)
+    insert_query = """
+        INSERT INTO staff_subcategories (
+            staff_id, 
+            subcategory_id, 
+            access_level_id
+        )
+        VALUES (%s, %s)
+    """
+    records_to_insert = [
+        (staff_id, subcategory_id, access_level_id) 
+        for subcategory_id, access_level_id 
+        in subcategory_ids.items()
+    ]
+    cursor.executemany(insert_query, records_to_insert)
+    print(cursor.rowcount, " records inserted successfully")
+
+#===============================================================================

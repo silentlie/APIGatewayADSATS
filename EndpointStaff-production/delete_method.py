@@ -1,57 +1,53 @@
-import mysql.connector
-import os
-import json
-import datetime
-from mysql.connector import Error
+from helper import (
+    connect_to_db,
+    json_response,
+    timer,
+    Error
+)
 
-def delete_method(body):
+@timer
+def delete_method(
+    body: dict
+) -> dict:
+    """
+    Delete method
+    """
+    return_body = None
+    status_code = 500
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
-
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
         staff_id = body["staff_id"]
 
-        if not staff_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps("Invalid input: staff_id must be provided")
-            }
-
-        update_query = """
-            UPDATE staff
-            SET deleted_at = %s
+        delete_query = """
+            DELETE FROM staff
             WHERE staff_id = %s
         """
-
-        cursor.execute(update_query, (datetime.datetime.now(), staff_id))
+        cursor.execute(delete_query, [staff_id])
         connection.commit()
-
+        return_body = staff_id
+        status_code = 200
+    # Catch SQL exeption
     except Error as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps("Internal server error")
-        }
+        return_body = f"SQL Error: {e._full_msg}"
+        # Error no 1062 means duplicate name
+        if e.errno == 1062:
+            # Code 409 means conflict in the state of the server
+            status_code = 409
+    # Catch other exeptions
+    except Exception as e:
+        return_body = f"SQL Error: {e}"
+    # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
-        if connection and connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection.is_connected():
+            cursor.close()
             connection.close()
             print("MySQL connection is closed")
+    response = json_response(status_code, return_body)
+    print (response)
+    return response
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PATCH,DELETE'
-        },
-        'body': json.dumps("Succeeded")
-    }
-
-
+#===============================================================================

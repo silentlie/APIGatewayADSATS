@@ -36,15 +36,17 @@ def connect_to_db():
 
 # return JSON response
 def json_response(status_code: int, body: Any) -> dict:
-    return {
-            'statusCode': status_code,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': allowed_headers
-            },
-            'body': json.dumps(body, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
-        }
+    response = {
+        'statusCode': status_code,
+        'headers': {
+            'Access-Control-Allow-Headers': '*',
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': allowed_headers
+        },
+        'body': json.dumps(body, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+    }
+    print(response)
+    return response
 
 # for dump datetime json format
 class DateTimeEncoder(json.JSONEncoder):

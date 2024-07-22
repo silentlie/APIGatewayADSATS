@@ -227,9 +227,9 @@ def specific_staff_subcategories(
     return cursor.fetchall()
 
 # ===========================================================================
-parameters = {
-    'procedure': "staff",
-    'limit': "20",
-    'offset': "0"
-}
-get_method(parameters)
+# parameters = {
+#     'procedure': "staff",
+#     'limit': "20",
+#     'offset': "0"
+# }
+# get_method(parameters)
