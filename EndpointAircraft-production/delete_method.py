@@ -1,17 +1,13 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error
-)
+from helper import Error, connect_to_db, json_response, timer
+
 
 @timer
-def delete_method(
-    body: dict
-) -> dict:
+def delete_method(body: dict) -> dict:
     """
     Delete method
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
     try:
@@ -27,27 +23,27 @@ def delete_method(
         connection.commit()
         return_body = aircraft_id
         status_code = 200
+
     # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
             # Code 409 means conflict in the state of the server
             status_code = 409
     # Catch other exeptions
     except Exception as e:
-        return_body = f"SQL Error: {e}"
+        return_body = {"error": e}
     # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
-#===============================================================================
+
+################################################################################

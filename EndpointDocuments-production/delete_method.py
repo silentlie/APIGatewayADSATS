@@ -1,7 +1,8 @@
-import mysql.connector
-import os
-import json
 import datetime
+import json
+import os
+
+import mysql.connector
 from mysql.connector import Error
 
 allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'

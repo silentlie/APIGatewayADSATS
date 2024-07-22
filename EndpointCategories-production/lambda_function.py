@@ -1,14 +1,12 @@
-from post_method import post_method
-from get_method import get_method
-from patch_method import patch_method
 from delete_method import delete_method
-from helper import json_response, timer, parse_body
+from get_method import get_method
+from helper import json_response, parse_body, timer
+from patch_method import patch_method
+from post_method import post_method
+
 
 @timer
-def lambda_handler(
-    event: dict, 
-    context: dict
-) -> dict:
+def lambda_handler(event: dict, context: dict) -> dict:
     method = event.get("httpMethod")
     assert isinstance(method, str)
     print(method)
@@ -30,5 +28,6 @@ def lambda_handler(
         return delete_method(body)
     else:
         return json_response(405, "Method not allow")
-    
-#===============================================================================
+
+
+################################################################################

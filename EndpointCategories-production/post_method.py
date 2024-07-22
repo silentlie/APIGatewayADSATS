@@ -1,15 +1,8 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error,
-    MySQLCursorAbstract
-)
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
+
 
 @timer
-def post_method(
-    body: dict
-) -> dict:
+def post_method(body: dict) -> dict:
     """
     Post method
     """
@@ -45,14 +38,12 @@ def post_method(
             connection.close()
             print("MySQL connection is closed")
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
+
 @timer
-def insert_category(
-    cursor: MySQLCursorAbstract,
-    body: dict
-) -> int:
+def insert_category(cursor: MySQLCursorAbstract, body: dict) -> int:
     """
     Insert new record and return id
     """
@@ -60,7 +51,12 @@ def insert_category(
     INSERT INTO categories (category_name, archived, created_at, description)
     VALUES (%s, %s, %s, %s)
     """
-    params = [body["category_name"], body["archived"], body["created_at"], body["description"]]
+    params = [
+        body["category_name"],
+        body["archived"],
+        body["created_at"],
+        body["description"],
+    ]
     cursor.execute(query, params)
     cursor.execute("SELECT LAST_INSERT_ID()")
     category_id = cursor.fetchone()
@@ -68,4 +64,4 @@ def insert_category(
     print("Record inserted successfully with ID:", category_id)
     return category_id
 
-#===============================================================================
+################################################################################

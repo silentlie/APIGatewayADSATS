@@ -1,14 +1,8 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error
-)
+from helper import Error, connect_to_db, json_response, timer
+
 
 @timer
-def delete_method(
-    body: dict
-) -> dict:
+def delete_method(body: dict) -> dict:
     """
     Delete method
     """
@@ -47,7 +41,7 @@ def delete_method(
             connection.close()
             print("MySQL connection is closed")
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
-#===============================================================================
+################################################################################

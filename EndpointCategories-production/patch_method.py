@@ -1,15 +1,8 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error,
-    MySQLCursorAbstract
-)
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
+
 
 @timer
-def patch_method(
-    body: dict
-) -> dict:
+def patch_method(body: dict) -> dict:
     """
     Patch method
     """
@@ -18,16 +11,16 @@ def patch_method(
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        category_id = body['category_id']
+        category_id = body["category_id"]
         # Update name if present in body
-        if 'category name' in body:
-            update_category_name(cursor,  body['category_name'],category_id)
+        if "category name" in body:
+            update_category_name(cursor, body["category_name"], category_id)
         # Update archived value if present in body
-        if 'archived' in body:
-            update_archived(cursor, body['archived'], category_id)
+        if "archived" in body:
+            update_archived(cursor, body["archived"], category_id)
         # Update description value if present in body
-        if 'description' in body:
-            update_description(cursor, body['description'], category_id)
+        if "description" in body:
+            update_description(cursor, body["description"], category_id)
         connection.commit()
         return_body = category_id
         status_code = 200
@@ -51,14 +44,13 @@ def patch_method(
             connection.close()
             print("MySQL connection is closed")
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
+
 
 @timer
 def update_category_name(
-    cursor: MySQLCursorAbstract,
-    category_name: str,
-    category_id: int
+    cursor: MySQLCursorAbstract, category_name: str, category_id: int
 ) -> None:
     """
     Update name
@@ -68,16 +60,14 @@ def update_category_name(
         SET category_name = %s
         WHERE category_id = %s
     """
-    params = [category_name, category_id]
+    params = (category_name, category_id)
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
 
 
 @timer
 def update_archived(
-    cursor: MySQLCursorAbstract,
-    archived: int,
-    category_id: int
+    cursor: MySQLCursorAbstract, archived: int, category_id: int
 ) -> None:
     """
     Update archived or not
@@ -91,11 +81,10 @@ def update_archived(
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
 
+
 @timer
 def update_description(
-    cursor: MySQLCursorAbstract,
-    description: str,
-    category_id: int
+    cursor: MySQLCursorAbstract, description: str, category_id: int
 ) -> None:
     """
     Update description
@@ -105,8 +94,8 @@ def update_description(
         SET description = %s
         WHERE category_id = %s
     """
-    params = [description, category_id]
+    params = (description, category_id)
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
 
-#===============================================================================
+################################################################################
