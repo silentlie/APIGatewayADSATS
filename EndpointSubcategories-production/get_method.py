@@ -26,20 +26,14 @@ def get_method(
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        # This may not be the optimal way to handle get method with multiple cases
-        valid_procedures = [
-            "name_only",
-            "subcategories",
-        ]
-        if 'procedure' not in parameters or parameters['procedure'] not in valid_procedures:
-            raise ValueError("Invalid procedure")
-        elif parameters['procedure'] == "name_only":
-            return_body = name_only(cursor)
-        elif (parameters['procedure'] == "subcategories"):
+        if "limit" in parameters and "offset" in parameters:
             query, params = build_query(parameters)
-            return_body = {}
-            return_body['total_records'] = total_records(cursor, query, params)
-            return_body['subcategories'] = subcategories(cursor, query, params, parameters)
+            return_body = {
+                "total_records": total_records(cursor, query, params),
+                "categories": fetch_subcategories(cursor, query, params, parameters),
+            }
+        else:
+            raise ValueError("Invalid use of method")
         status_code = 200
     except Error as e:
         # Handle SQL error
@@ -130,11 +124,8 @@ def total_records(
     return total_records
 
 @timer
-def subcategories(
-    cursor: MySQLCursorAbstract,
-    query: str,
-    params: list,
-    parameters: dict
+def fetch_subcategories(
+    cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """
     Returns the total number of records matching the query.
@@ -176,22 +167,6 @@ def subcategories(
     print(query)
     print(params)
     cursor.execute(query, params)
-    return cursor.fetchall()
-
-@timer
-def name_only(
-    cursor: MySQLCursorAbstract
-) -> list:
-    """
-    Return id and name only
-    """
-    query = """
-    SELECT
-        subcategory_id,
-        subcategory_name
-    FROM subcategories
-    """
-    cursor.execute(query)
     return cursor.fetchall()
 
 #===============================================================================

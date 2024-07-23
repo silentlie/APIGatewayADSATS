@@ -166,27 +166,6 @@ def fetch_aircraft(
 
 
 @timer
-def name_only(cursor: MySQLCursorAbstract) -> list:
-    """
-    Fetches only the aircraft ID and name.
-
-    Args:
-        cursor (MySQLCursorAbstract): The database cursor for executing queries.
-
-    Returns:
-        list: The list of aircraft IDs and names.
-    """
-    query = """
-    SELECT
-        aircraft_id,
-        aircraft_name
-    FROM aircraft
-    """
-    cursor.execute(query)
-    return cursor.fetchall()
-
-
-@timer
 def specific_aircraft_staff(cursor: MySQLCursorAbstract, aircraft_id: int) -> list:
     """
     Fetches the list of staff IDs linked to a specific aircraft.

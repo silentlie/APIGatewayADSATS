@@ -162,25 +162,4 @@ def fetch_categories(
     return cursor.fetchall()
 
 
-@timer
-def name_only(cursor: MySQLCursorAbstract) -> list:
-    """
-    Fetches only the category ID and name.
-
-    Args:
-        cursor (MySQLCursorAbstract): The database cursor for executing queries.
-
-    Returns:
-        list: The list of category IDs and names.
-    """
-    query = """
-    SELECT
-        category_id,
-        category_name
-    FROM categories
-    """
-    cursor.execute(query)
-    return cursor.fetchall()
-
-
 ################################################################################
