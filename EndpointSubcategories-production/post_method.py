@@ -78,8 +78,8 @@ def insert_subcategory(cursor: MySQLCursorAbstract, body: dict) -> int:
     assert isinstance(result, dict)
     subcategory_id = result["id"]
     assert isinstance(subcategory_id, int)
-    print("Record inserted successfully with ID:", subcategory_id)
+    print("Record inserted successfully with ID: ", subcategory_id)
     return subcategory_id
 
 
-# ===============================================================================
+################################################################################

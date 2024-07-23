@@ -82,7 +82,7 @@ def build_query(parameters: dict) -> tuple:
         params.append(parameters["archived"])
     if "created_at" in parameters:
         created_at_str = parameters["created_at"]
-        assert isinstance(created_at_str, str), "created_at_str is not a str"
+        assert isinstance(created_at_str, str), "created_at_str must be a string"
         created_at = created_at_str.split(",")
         filters.append("created_at BETWEEN %s AND %s")
         params.extend(created_at)

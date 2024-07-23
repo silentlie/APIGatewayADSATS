@@ -116,9 +116,9 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     """
     cursor.execute(total_query, params)
     result = cursor.fetchone()
-    assert isinstance(result, dict)
+    assert isinstance(result, dict), "Result must be a dict"
     total_records = result["total_records"]
-    assert isinstance(total_records, int)
+    assert isinstance(total_records, int), "Total records must be an integer"
     return total_records
 
 

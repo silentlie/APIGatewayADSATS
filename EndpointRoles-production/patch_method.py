@@ -24,8 +24,8 @@ def patch_method(body: dict) -> dict:
         # Ensure role_id is in body
         if "role_id" not in body:
             raise ValueError("role_id is required")
-        
-        role_id = body['role_id']
+
+        role_id = body["role_id"]
 
         # Update role fields if present in body
         if "role_name" in body:
@@ -55,6 +55,7 @@ def patch_method(body: dict) -> dict:
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
     print(response)
     return response
@@ -79,6 +80,7 @@ def update_role_name(cursor: MySQLCursorAbstract, role_name: str, role_id: int) 
     cursor.execute(update_query, params)
     print(f"{cursor.rowcount} records successfully updated")
 
+
 @timer
 def update_archived(cursor: MySQLCursorAbstract, archived: int, role_id: int) -> None:
     """
@@ -97,6 +99,7 @@ def update_archived(cursor: MySQLCursorAbstract, archived: int, role_id: int) ->
     params = [archived, role_id]
     cursor.execute(update_query, params)
     print(f"{cursor.rowcount} records successfully updated")
+
 
 @timer
 def update_description(

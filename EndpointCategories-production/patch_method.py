@@ -21,6 +21,11 @@ def patch_method(body: dict) -> dict:
         # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
+
+        # Ensure category_id is in body
+        if "category_id" not in body:
+            raise ValueError("Missing category_id in the request body")
+
         category_id = body["category_id"]
 
         # Update category fields if present in body
@@ -76,7 +81,7 @@ def update_category_name(
     """
     params = (category_name, category_id)
     cursor.execute(update_query, params)
-    print(f"{cursor.rowcount} records successfully updated")
+    print(f"{cursor.rowcount} record(s) successfully updated")
 
 
 @timer
@@ -98,7 +103,7 @@ def update_archived(
     """
     params = (archived, category_id)
     cursor.execute(update_query, params)
-    print(f"{cursor.rowcount} records successfully updated")
+    print(f"{cursor.rowcount} record(s) successfully updated")
 
 
 @timer
@@ -120,7 +125,7 @@ def update_description(
     """
     params = (description, category_id)
     cursor.execute(update_query, params)
-    print(f"{cursor.rowcount} records successfully updated")
+    print(f"{cursor.rowcount} record(s) successfully updated")
 
 
 ################################################################################

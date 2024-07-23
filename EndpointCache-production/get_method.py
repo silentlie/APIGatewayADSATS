@@ -32,7 +32,7 @@ def get_method(parameters: dict) -> dict:
             }
         else:
             raise ValueError("Invalid use of method: 'cache' parameter is required.")
-        
+
         status_code = 200
     except Error as e:
         # Handle SQL error

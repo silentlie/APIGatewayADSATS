@@ -16,6 +16,7 @@ def get_method(parameters: dict) -> dict:
     cursor = None
     return_body = None
     status_code = 500
+
     try:
         # Establish database connection
         connection = connect_to_db()
@@ -25,7 +26,7 @@ def get_method(parameters: dict) -> dict:
             query, params = build_query(parameters)
             return_body = {
                 "total_records": total_records(cursor, query, params),
-                "categories": fetch_subcategories(cursor, query, params, parameters),
+                "subcategories": fetch_subcategories(cursor, query, params, parameters),
             }
         else:
             raise ValueError("Invalid use of method")
@@ -105,9 +106,7 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     Returns:
         int: The total number of records.
     """
-    total_query = f"SELECT COUNT(*) as total_records FROM ({query}) AS initial_query"
-    print(total_query)
-    print(params)
+    total_query = f"SELECT COUNT(*) AS total_records FROM ({query}) AS initial_query"
     cursor.execute(total_query, params)
     result = cursor.fetchone()
     assert isinstance(result, dict)
@@ -148,12 +147,10 @@ def fetch_subcategories(
         and parameters["sort_column"] in valid_columns
         and parameters["order"] in valid_orders
     ):
-        query += " ORDER BY %s %s"
-        params.append(parameters["sort_column"])
-        params.append(parameters["order"])
+        query += f" ORDER BY {parameters['sort_column']} {parameters['order']}"
 
     # Add pagination
-    query += " LIMIT %s OFFSET %s "
+    query += " LIMIT %s OFFSET %s"
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
 
@@ -161,4 +158,4 @@ def fetch_subcategories(
     return cursor.fetchall()
 
 
-# ===============================================================================
+################################################################################

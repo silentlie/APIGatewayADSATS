@@ -21,6 +21,11 @@ def delete_method(body: dict) -> dict:
         # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
+
+        # Ensure category_id is in body
+        if "category_id" not in body:
+            raise ValueError("Missing category_id in the request body")
+
         category_id = body["category_id"]
 
         # Delete the category with the given ID

@@ -21,7 +21,12 @@ def delete_method(body: dict) -> dict:
         # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        subcategory_id = body["category_id"]
+
+        # Ensure category_id is in body
+        if "subcategory_id" not in body:
+            raise ValueError("Missing subcategory_id in the request body")
+
+        subcategory_id = body["subcategory_id"]
 
         # Delete the subcategory with the given ID
         delete_query = """

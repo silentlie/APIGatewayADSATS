@@ -1,9 +1,5 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error
-)
+from helper import Error, connect_to_db, json_response, timer
+
 
 @timer
 def delete_method(body: dict) -> dict:
@@ -28,7 +24,7 @@ def delete_method(body: dict) -> dict:
         # Ensure role_id is in body
         if "role_id" not in body:
             raise ValueError("role_id is required")
-        
+
         role_id = body["role_id"]
 
         # Delete the role with the given ID
@@ -58,8 +54,10 @@ def delete_method(body: dict) -> dict:
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
     print(response)
     return response
+
 
 ################################################################################

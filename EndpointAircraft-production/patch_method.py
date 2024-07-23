@@ -53,10 +53,6 @@ def patch_method(body: dict) -> dict:
         return_body = {"error": e._full_msg}
         if e.errno == 1062:
             status_code = 409  # Conflict error
-    except ValueError as e:
-        # Handle validation errors
-        return_body = {"error": str(e)}
-        status_code = 400  # Bad request
     except Exception as e:
         # Handle general error
         return_body = {"error": str(e)}
@@ -64,15 +60,13 @@ def patch_method(body: dict) -> dict:
         # Close cursor and connection
         if cursor:
             cursor.close()
-            print("MySQL cursor is closed")  # Consider using logging instead of print
+            print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
-            print(
-                "MySQL connection is closed"
-            )  # Consider using logging instead of print
+            print("MySQL connection is closed")
 
     response = json_response(status_code, return_body)
-    print(response)  # Consider using logging instead of print
+    print(response)
     return response
 
 
@@ -179,3 +173,6 @@ def insert_aircraft_staff(
     records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
     cursor.executemany(query, records_to_insert)
     print(f"{cursor.rowcount} record(s) successfully inserted")
+
+
+################################################################################

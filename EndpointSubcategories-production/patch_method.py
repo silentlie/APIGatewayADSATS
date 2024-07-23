@@ -20,7 +20,13 @@ def patch_method(body: dict) -> dict:
         # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
+
+        # Ensure subcategory_id is in body
+        if "subcategory_id" not in body:
+            raise ValueError("Missing subcategory_id in the request body")
+
         subcategory_id = body["subcategory_id"]
+
         # Update category fields if present in body
         if "subcategory_name" in body:
             update_subcategory_name(cursor, body["subcategory_name"], subcategory_id)
@@ -130,7 +136,14 @@ def update_category_id(
     category_id: int,
     subcategory_id: int,
 ) -> None:
-    """ """
+    """
+    Updates the category ID of the subcategory.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        category_id (int): The new category ID.
+        subcategory_id (int): The ID of the subcategory to update.
+    """
     update_query = """
         UPDATE subcategories
         SET category_id = %s
@@ -141,4 +154,4 @@ def update_category_id(
     print(f"{cursor.rowcount} records successfully updated")
 
 
-# ===============================================================================
+################################################################################

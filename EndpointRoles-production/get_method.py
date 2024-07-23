@@ -159,6 +159,7 @@ def fetch_roles(
     return cursor.fetchall()
 
 
+@timer
 def specific_role_staff(
     cursor: MySQLCursorAbstract,
     role_id: int,

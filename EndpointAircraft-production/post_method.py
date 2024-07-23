@@ -88,7 +88,7 @@ def insert_aircraft(cursor: MySQLCursorAbstract, body: dict) -> int:
     assert isinstance(result, dict), "Result must be a dict"
     aircraft_id = result["id"]
     assert isinstance(aircraft_id, int), "Aircraft ID must be an integer"
-    print("Record inserted successfully with ID:", aircraft_id)
+    print("Record inserted successfully with ID: ", aircraft_id)
     return aircraft_id
 
 
@@ -113,7 +113,7 @@ def insert_aircraft_staff(
     """
     records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(cursor.rowcount, "records inserted successfully")
+    print(f"{cursor.rowcount} records successfully insseted")
 
 
 ################################################################################

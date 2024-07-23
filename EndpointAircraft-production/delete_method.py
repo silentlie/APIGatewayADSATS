@@ -4,23 +4,34 @@ from helper import Error, connect_to_db, json_response, timer
 @timer
 def delete_method(body: dict) -> dict:
     """
-    Delete method
+    Handles DELETE requests to remove an aircraft record from the database.
+
+    Args:
+        body (dict): The request body containing the aircraft ID to delete.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
     connection = None
     cursor = None
     return_body = None
     status_code = 500
+
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         aircraft_id = body["aircraft_id"]
 
+        # Execute the delete query
         delete_query = """
             DELETE FROM aircraft
             WHERE aircraft_id = %s
         """
         cursor.execute(delete_query, [aircraft_id])
         connection.commit()
+
+        # Prepare the response
         return_body = {"aircraft_id": aircraft_id}
         status_code = 200
 
@@ -40,6 +51,8 @@ def delete_method(body: dict) -> dict:
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
+    # Create the response and print it
     response = json_response(status_code, return_body)
     print(response)
     return response
