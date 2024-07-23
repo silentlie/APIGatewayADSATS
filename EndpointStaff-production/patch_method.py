@@ -1,82 +1,80 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error,
-    MySQLCursorAbstract
-)
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
+
 
 @timer
-def patch_method(
-    body: dict
-) -> dict:
+def patch_method(body: dict) -> dict:
     """
-    Patch method
+    Handles PATCH requests to update an existing staff record.
+
+    Args:
+        body (dict): The request body containing the staff details to update.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
+
     try:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        staff_id = body['staff_id']
-        
-        # Update name if present in body
-        if 'staff_name' in body:
-            update_staff_name(cursor,  body['staff_name'],staff_id)
 
-        # Update archived value if present in body
-        if 'archived' in body:
-            update_archived(cursor, body['archived'], staff_id)
-        
-        # Update description value if present in body
-        if 'description' in body:
-            update_description(cursor, body['description'], staff_id)
-        
-        # Delete existing records then insert new ones if 'aircraft_ids' is in body
-        if 'aircraft_ids' in body:
-            insert_aircraft_staff(cursor, body['staff_ids'], staff_id)
-        
-        # Delete existing records then insert new ones if 'aircraft_ids' is in body
-        if 'role_ids' in body:
-            insert_roles_staff(cursor, body['role_ids'], staff_id)
-        
-        # Delete existing records then insert new ones if 'aircraft_ids' is in body
-        if 'subcategory_ids' in body:
-            insert_staff_subcategories(cursor, body['subcategory_ids'], staff_id)
+        # Ensure staff_id is in body
+        if "staff_id" not in body:
+            raise ValueError("Missing staff_id in the request body")
+
+        staff_id = body["staff_id"]
+
+        # Update staff fields if present in the request body
+        if "staff_name" in body:
+            update_staff_name(cursor, body["staff_name"], staff_id)
+        if "archived" in body:
+            update_archived(cursor, body["archived"], staff_id)
+        if "description" in body:
+            update_description(cursor, body["description"], staff_id)
+        if "aircraft_ids" in body:
+            insert_aircraft_staff(cursor, body["aircraft_ids"], staff_id)
+        if "role_ids" in body:
+            insert_roles_staff(cursor, body["role_ids"], staff_id)
+        if "subcategory_ids" in body:
+            insert_staff_subcategories(cursor, body["subcategory_ids"], staff_id)
+
+        # Commit the transaction
         connection.commit()
-        return_body = staff_id
+        return_body = {"staff_id": staff_id}
         status_code = 200
-    # Catch SQL exeption
+
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
+    # Create the response and print it
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
+
 
 @timer
 def update_staff_name(
-    cursor: MySQLCursorAbstract,
-    staff_name: str,
-    staff_id: int
+    cursor: MySQLCursorAbstract, staff_name: str, staff_id: int
 ) -> None:
     """
-    Update name
+    Update staff name.
     """
     update_query = """
         UPDATE staff
@@ -85,16 +83,13 @@ def update_staff_name(
     """
     params = [staff_name, staff_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} record(s) successfully updated")
+
 
 @timer
-def update_archived(
-    cursor: MySQLCursorAbstract,
-    archived: int,
-    staff_id: int
-) -> None:
+def update_archived(cursor: MySQLCursorAbstract, archived: int, staff_id: int) -> None:
     """
-    Update archived or not
+    Update archived status.
     """
     update_query = """
         UPDATE staff
@@ -103,16 +98,15 @@ def update_archived(
     """
     params = [archived, staff_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} record(s) successfully updated")
+
 
 @timer
 def update_description(
-    cursor: MySQLCursorAbstract,
-    description: str,
-    staff_id: int
+    cursor: MySQLCursorAbstract, description: str, staff_id: int
 ) -> None:
     """
-    Update description
+    Update description.
     """
     update_query = """
         UPDATE staff
@@ -121,15 +115,13 @@ def update_description(
     """
     params = [description, staff_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} record(s) successfully updated")
+
 
 @timer
-def delete_aircraft_staff(
-    cursor: MySQLCursorAbstract,
-    staff_id: int
-) -> None:
+def delete_aircraft_staff(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records of specific id
+    Delete linking records for aircraft.
     """
     delete_query = """
         DELETE FROM aircraft_staff
@@ -137,16 +129,15 @@ def delete_aircraft_staff(
     """
     params = [staff_id]
     cursor.execute(delete_query, params)
-    print(cursor.rowcount, " records deleted successfully")
+    print(f"{cursor.rowcount} record(s) successfully deleted")
+
 
 @timer
 def insert_aircraft_staff(
-    cursor: MySQLCursorAbstract,
-    aircraft_ids: list,
-    staff_id :int
-):
+    cursor: MySQLCursorAbstract, aircraft_ids: list, staff_id: int
+) -> None:
     """
-    Insert into many to many table
+    Insert into many-to-many table for aircraft.
     """
     # Delete before insert
     delete_aircraft_staff(cursor, staff_id)
@@ -156,15 +147,13 @@ def insert_aircraft_staff(
     """
     records_to_insert = [(aircraft_id, staff_id) for aircraft_id in aircraft_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(cursor.rowcount, " records inserted successfully")
+    print(f"{cursor.rowcount} record(s) successfully inserted")
+
 
 @timer
-def delete_roles_staff(
-    cursor: MySQLCursorAbstract,
-    staff_id: int
-) -> None:
+def delete_roles_staff(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records of specific id
+    Delete linking records for roles.
     """
     delete_query = """
         DELETE FROM roles_staff
@@ -172,16 +161,15 @@ def delete_roles_staff(
     """
     params = [staff_id]
     cursor.execute(delete_query, params)
-    print(cursor.rowcount, " records deleted successfully")
+    print(f"{cursor.rowcount} record(s) successfully deleted")
+
 
 @timer
 def insert_roles_staff(
-    cursor: MySQLCursorAbstract,
-    role_ids: list,
-    staff_id :int
-):
+    cursor: MySQLCursorAbstract, role_ids: list, staff_id: int
+) -> None:
     """
-    Insert into many to many table
+    Insert into many-to-many table for roles.
     """
     # Delete before insert
     delete_roles_staff(cursor, staff_id)
@@ -191,15 +179,13 @@ def insert_roles_staff(
     """
     records_to_insert = [(role_id, staff_id) for role_id in role_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(cursor.rowcount, " records inserted successfully")
+    print(f"{cursor.rowcount} record(s) successfully inserted")
+
 
 @timer
-def delete_staff_subcategories(
-    cursor: MySQLCursorAbstract,
-    staff_id: int
-) -> None:
+def delete_staff_subcategories(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records of specific id
+    Delete linking records for subcategories.
     """
     delete_query = """
         DELETE FROM staff_subcategories
@@ -207,33 +193,32 @@ def delete_staff_subcategories(
     """
     params = [staff_id]
     cursor.execute(delete_query, params)
-    print(cursor.rowcount, " records deleted successfully")
+    print(f"{cursor.rowcount} record(s) successfully deleted")
+
 
 @timer
 def insert_staff_subcategories(
-    cursor: MySQLCursorAbstract,
-    subcategory_ids: dict,
-    staff_id :int
-):
+    cursor: MySQLCursorAbstract, subcategory_ids: dict, staff_id: int
+) -> None:
     """
-    Insert into many to many table
+    Insert into many-to-many table for staff subcategories.
     """
     # Delete before insert
-    delete_aircraft_staff(cursor, staff_id)
+    delete_staff_subcategories(cursor, staff_id)
     insert_query = """
         INSERT INTO staff_subcategories (
-            staff_id, 
-            subcategory_id, 
+            staff_id,
+            subcategory_id,
             access_level_id
         )
-        VALUES (%s, %s)
+        VALUES (%s, %s, %s)
     """
     records_to_insert = [
-        (staff_id, subcategory_id, access_level_id) 
-        for subcategory_id, access_level_id 
-        in subcategory_ids.items()
+        (staff_id, subcategory_id, access_level_id)
+        for subcategory_id, access_level_id in subcategory_ids.items()
     ]
     cursor.executemany(insert_query, records_to_insert)
-    print(cursor.rowcount, " records inserted successfully")
+    print(f"{cursor.rowcount} record(s) successfully inserted")
 
-#===============================================================================
+
+################################################################################

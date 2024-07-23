@@ -4,7 +4,7 @@ from helper import Error, connect_to_db, json_response, timer
 @timer
 def delete_method(body: dict) -> dict:
     """
-    Handles DELETE requests to remove an staff record from the database.
+    Handles DELETE requests to remove a staff record from the database.
 
     Args:
         body (dict): The request body containing the staff ID to delete.
@@ -16,6 +16,7 @@ def delete_method(body: dict) -> dict:
     cursor = None
     return_body = None
     status_code = 500
+
     try:
         # Establish database connection
         connection = connect_to_db()
@@ -33,8 +34,6 @@ def delete_method(body: dict) -> dict:
         """
         cursor.execute(delete_query, [staff_id])
         connection.commit()
-
-        # Prepare the response
         return_body = {"staff_id": staff_id}
         status_code = 200
 
