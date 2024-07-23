@@ -17,30 +17,37 @@ def lambda_handler(event: dict, context: dict) -> dict:
     Returns:
         dict: The HTTP response dictionary with status code, headers, and body.
     """
+    # Extract the HTTP method from the event
     method = event.get("httpMethod")
     assert isinstance(method, str), "httpMethod must be a string"
-    print(method)
+    print(f"Received request with method: {method}")
 
-    # Handling different HTTP methods
+    # Handle different HTTP methods
     if method == "OPTIONS":
+        # Return OK response for preflight requests
         return json_response(200, "OK")
     elif method == "GET":
+        # Handle GET request with query parameters
         parameters = event.get("queryStringParameters")
         assert isinstance(
             parameters, dict
         ), "queryStringParameters must be a dictionary"
-        print(parameters)
+        # print(f"Query parameters: {parameters}")
         return get_method(parameters)
     elif method == "POST":
+        # Handle POST request with body parsing
         body = parse_body(event.get("body"))
         return post_method(body)
     elif method == "PATCH":
+        # Handle PATCH request with body parsing
         body = parse_body(event.get("body"))
         return patch_method(body)
     elif method == "DELETE":
+        # Handle DELETE request with body parsing
         body = parse_body(event.get("body"))
         return delete_method(body)
     else:
+        # Return method not allowed response for unsupported methods
         return json_response(405, "Method not allowed")
 
 

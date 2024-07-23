@@ -33,17 +33,16 @@ def patch_method(body: dict) -> dict:
         connection.commit()
         return_body = {"aircraft_id": aircraft_id}
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        # Handle SQL errors
-        return_body = {"error": e.msg}
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            status_code = 409  # Conflict: Duplicate entry
+            status_code = 409  # Conflict error
     except Exception as e:
-        # Handle other exceptions
+        # Handle general error
         return_body = {"error": str(e)}
-    # Close cursor and connection
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")

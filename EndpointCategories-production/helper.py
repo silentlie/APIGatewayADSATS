@@ -9,6 +9,7 @@ import mysql.connector
 from mysql.connector import Error  # noqa: F401
 from mysql.connector.abstracts import MySQLCursorAbstract  # noqa: F401
 
+# Allowed HTTP methods for CORS
 allowed_headers = "OPTIONS,POST,GET,PATCH,DELETE"
 
 
@@ -31,7 +32,7 @@ def parse_body(body: Any) -> dict:
             return json.loads(body)
         except json.JSONDecodeError as e:
             # Log the error for debugging
-            print(f"Error decoding JSON: {e}")
+            # print(f"Error decoding JSON: {e}")
             return {}
     elif isinstance(body, dict):
         return body
@@ -111,6 +112,3 @@ def timer(func):
         return _result
 
     return wrapper
-
-
-################################################################################

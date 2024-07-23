@@ -31,17 +31,16 @@ def post_method(body: dict) -> dict:
         # Prepare successful response
         return_body = {"category_id": category_id}
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
+        # Handle SQL error
         return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict error
     except Exception as e:
+        # Handle general error
         return_body = {"error": str(e)}
-    # Close cursor and connection
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
