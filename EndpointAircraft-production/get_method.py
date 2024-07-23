@@ -4,55 +4,55 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def get_method(parameters: dict) -> dict:
     """
-    Get method
+    Handles GET requests to fetch aircraft records based on various procedures.
+
+    Args:
+        parameters (dict): The query parameters for the request.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
     connection = None
     cursor = None
     return_body = None
     status_code = 500
+
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        # This may not be the optimal way to handle get method with multiple cases
-        valid_procedures = [
-            "name_only",
-            "aircraft",
-            "specific_aircraft",
-        ]
-        if (
-            "procedure" not in parameters
-            or parameters["procedure"] not in valid_procedures
-        ):
-            raise ValueError("Invalid procedure")
-        elif parameters["procedure"] == "name_only":
-            return_body = name_only(cursor)
-        elif parameters["procedure"] == "aircraft":
-            query, params = build_query(parameters)
-            return_body = {}
-            return_body["total_records"] = total_records(cursor, query, params)
-            return_body["aircraft"] = aircraft(cursor, query, params, parameters)
-        elif parameters["procedure"] == "specific_aircraft":
+
+        if "aircraft_id" in parameters:
             aircraft_id = int(parameters["aircraft_id"])
-            cursor = connection.cursor()
             return_body = {"staff_ids": specific_aircraft_staff(cursor, aircraft_id)}
+        elif "limit" in parameters and "offset" in parameters:
+            query, params = build_query(parameters)
+            return_body = {
+                "total_records": total_records(cursor, query, params),
+                "aircraft": aircraft(cursor, query, params, parameters),
+            }
+        else:
+            raise ValueError("Invalid use of method")
+
         status_code = 200
-    # Catch SQL exeption
+
     except Error as e:
-        return_body = {"error": e._full_msg}
+        # Handle SQL errors
+        return_body = {"error": e.msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict: Duplicate entry
     except Exception as e:
-        return_body = {"error": e}
-    # Close cursor and connection
+        # Handle other exceptions
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
     print(response)
     return response
@@ -61,41 +61,53 @@ def get_method(parameters: dict) -> dict:
 @timer
 def build_query(parameters: dict) -> tuple:
     """
-    Build query and params
+    Builds the SQL query and parameters for fetching aircraft records.
+
+    Args:
+        parameters (dict): The query parameters for filtering the records.
+
+    Returns:
+        tuple: The SQL query string and list of parameters.
     """
     query = """
         SELECT
             *
         FROM aircraft
     """
-    # define filters if any
     filters = []
-    # parameters for binding
     params = []
-    # search for name
+
+    # Add filters based on parameters
     if "search" in parameters:
         filters.append("aircraft_name LIKE %s")
-        params.append(parameters["search"])
-    # filter based on archived or not
+        params.append(f"%{parameters['search']}%")
     if "archived" in parameters:
         filters.append("archived = %s")
         params.append(parameters["archived"])
-    # filter based on date range when it was added
     if "created_at" in parameters:
-        created_at = parameters["start_at"].split(",")
-        filters.append("start_at BETWEEN %s AND %s")
+        created_at = parameters["created_at"].split(",")
+        filters.append("created_at BETWEEN %s AND %s")
         params.extend(created_at)
-    # if there is any filter add to query
+
+    # Append filters to the query
     if filters:
-        query += "WHERE " + " AND ".join(filters)
-    # finish prepare query and params
+        query += " WHERE " + " AND ".join(filters)
+
     return query, params
 
 
 @timer
 def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     """
-    Return total records
+    Returns the total number of records matching the query.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+
+    Returns:
+        int: The total number of records.
     """
     total_query = f"""
         SELECT
@@ -115,9 +127,18 @@ def aircraft(
     cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """
-    Return all rows based on pagination
+    Fetches aircraft records with pagination and sorting.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+        parameters (dict): The query parameters for pagination and sorting.
+
+    Returns:
+        list: The list of aircraft records.
     """
-    # sort column if need it, default is pk
+    # Add sorting if specified
     valid_columns = [
         "aircraft_id",
         "aircraft_name",
@@ -132,14 +153,13 @@ def aircraft(
         and parameters["sort_column"] in valid_columns
         and parameters["order"] in valid_orders
     ):
-        query += " ORDER BY %s %s"
-        params.append(parameters["sort_column"])
-        params.append(parameters["order"])
-    # pagination
-    query += " LIMIT %s OFFSET %s "
+        query += " ORDER BY " + parameters["sort_column"] + " " + parameters["order"]
+
+    # Add pagination
+    query += " LIMIT %s OFFSET %s"
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
-    # finish query
+
     print(query)
     print(params)
     cursor.execute(query, params)
@@ -149,7 +169,13 @@ def aircraft(
 @timer
 def name_only(cursor: MySQLCursorAbstract) -> list:
     """
-    Return id and name only
+    Fetches only the aircraft ID and name.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+
+    Returns:
+        list: The list of aircraft IDs and names.
     """
     query = """
         SELECT
@@ -164,7 +190,14 @@ def name_only(cursor: MySQLCursorAbstract) -> list:
 @timer
 def specific_aircraft_staff(cursor: MySQLCursorAbstract, aircraft_id: int) -> list:
     """
-    Return a list of staff linked with specific id
+    Fetches the list of staff IDs linked to a specific aircraft.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        aircraft_id (int): The ID of the aircraft.
+
+    Returns:
+        list: The list of staff IDs.
     """
     query = """
         SELECT
@@ -177,9 +210,3 @@ def specific_aircraft_staff(cursor: MySQLCursorAbstract, aircraft_id: int) -> li
 
 
 ################################################################################
-# parameters = {
-#     'procedure': "aircraft",
-#     'limit': "20",
-#     'offset': "0"
-# }
-# get_method(parameters)

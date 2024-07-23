@@ -4,42 +4,53 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def post_method(body: dict) -> dict:
     """
-    Post method
+    Handles POST requests to insert a new aircraft record and optionally link staff records.
+
+    Args:
+        body (dict): The request body containing the aircraft details and optional staff IDs.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
     connection = None
     cursor = None
     return_body = None
     status_code = 500
+
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        # Insert the new record and get the id
+
+        # Insert the new aircraft record and get the ID
         aircraft_id = insert_aircraft(cursor, body)
-        # Add linking records if any into the table
+
+        # Insert linking records if any staff IDs are provided
         if "staff_ids" in body:
             insert_aircraft_staff(cursor, aircraft_id, body["staff_ids"])
-        # Commits the transaction to make the insert operation permanent
-        # If any error is raised, there'll be no commit
+
+        # Commit the transaction
         connection.commit()
-        return_body = aircraft_id
+        return_body = {"aircraft_id": aircraft_id}
         status_code = 200
-    # Catch SQL exeption
+
     except Error as e:
-        return_body = {"error": e._full_msg}
+        # Handle SQL errors
+        return_body = {"error": e.msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict: Duplicate entry
     except Exception as e:
-        return_body = {"error": e}
-    # Close cursor and connection
+        # Handle other exceptions
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
     print(response)
     return response
@@ -48,7 +59,14 @@ def post_method(body: dict) -> dict:
 @timer
 def insert_aircraft(cursor: MySQLCursorAbstract, body: dict) -> int:
     """
-    Insert new record and return id
+    Inserts a new aircraft record into the database.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        body (dict): The request body containing the aircraft details.
+
+    Returns:
+        int: The ID of the newly inserted aircraft record.
     """
     query = """
     INSERT INTO aircraft (aircraft_name, archived, created_at, description)
@@ -61,9 +79,11 @@ def insert_aircraft(cursor: MySQLCursorAbstract, body: dict) -> int:
         body["description"],
     ]
     cursor.execute(query, params)
-    cursor.execute("SELECT LAST_INSERT_ID()")
-    aircraft_id = cursor.fetchone()
-    assert isinstance(aircraft_id, int)
+    cursor.execute("SELECT LAST_INSERT_ID() AS id")
+    result = cursor.fetchone()
+    assert isinstance(result, dict), "Result must be a dict"
+    aircraft_id = result["id"]
+    assert isinstance(aircraft_id, int), "Aircraft ID must be an integer"
     print("Record inserted successfully with ID:", aircraft_id)
     return aircraft_id
 
@@ -73,14 +93,23 @@ def insert_aircraft_staff(
     cursor: MySQLCursorAbstract, aircraft_id: int, staff_ids: list
 ) -> None:
     """
-    Insert into many to many table
+    Inserts records into the aircraft_staff linking table.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        aircraft_id (int): The ID of the aircraft.
+        staff_ids (list): The list of staff IDs to link with the aircraft.
+
+    Returns:
+        None
     """
     insert_query = """
-        INSERT INTO aircraft_staff (aircraft_id, staff_id)
-        VALUES (%s, %s)
+    INSERT INTO aircraft_staff (aircraft_id, staff_id)
+    VALUES (%s, %s)
     """
     records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(cursor.rowcount, " records inserted successfully")
+    print(cursor.rowcount, "records inserted successfully")
+
 
 ################################################################################
