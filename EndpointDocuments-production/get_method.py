@@ -33,14 +33,10 @@ def get_method(parameters: dict) -> dict:
         status_code = 200
     # Catch SQL exeption
     except Error as e:
-        return_body = {
-            'SQL Error': e._full_msg
-        }
+        return_body = {"SQL Error": e._full_msg}
     # Catch other exeptions
     except Exception as e:
-        return_body = {
-            'Error': e
-        }
+        return_body = {"Error": e}
     # Close cursor and connection
     finally:
         if cursor:
@@ -95,7 +91,7 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     Return total records
     """
     total_query = f"""
-        SELECT 
+        SELECT
             COUNT(*) as total_records
         FROM ({query}) AS initial_query
     """
@@ -139,8 +135,7 @@ def documents(
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
     # finish query
-    print(query)
-    print(params)
+
     cursor.execute(query, params)
     return cursor.fetchall()
 

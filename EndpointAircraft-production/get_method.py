@@ -33,7 +33,7 @@ def get_method(parameters: dict) -> dict:
             }
         else:
             raise ValueError("Invalid use of method")
-        
+
         status_code = 200
     except Error as e:
         # Handle SQL error
@@ -159,8 +159,6 @@ def fetch_aircraft(
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
 
-    print(query)
-    print(params)
     cursor.execute(query, params)
     return cursor.fetchall()
 

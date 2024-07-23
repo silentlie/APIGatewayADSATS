@@ -1,11 +1,13 @@
-from datetime import datetime
 import decimal
 import json
-from mysql.connector import Error
-import mysql.connector
 import os
+from datetime import datetime
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH'
+import mysql.connector
+from mysql.connector import Error
+
+allowed_headers = "OPTIONS,POST,GET,PATCH"
+
 
 def get_method(parameters):
     try:
@@ -17,18 +19,18 @@ def get_method(parameters):
         limit = int(parameters["limit"])
         offset = int(parameters["offset"])
         params.extend([limit, offset])
-        
+
         cursor.execute(query, params)
         rows = cursor.fetchall()
 
         # Original: SUM(CASE WHEN n.deadline_at < NOW() THEN 1 ELSE 0 END) AS overdue
         # Modified by Carole 16/06 to have overdue items being those that are past due date and unread
         unread_query = """
-        SELECT 
+        SELECT
             SUM(CASE WHEN nf.status = 0 THEN 1 ELSE 0 END) AS unread,
             SUM(CASE WHEN nf.status = 0 AND n.deadline_at < NOW() THEN 1 ELSE 0 END) AS overdue
         FROM notifications AS nf
-        JOIN notices AS n 
+        JOIN notices AS n
         ON nf.notice_id = n.notice_id
         WHERE (nf.status = 0 OR n.deadline_at < NOW())
         AND nf.staff_id = %s
@@ -39,32 +41,38 @@ def get_method(parameters):
         count = cursor.fetchone()
 
         response = {
-            'rows': rows,
+            "rows": rows,
             # Convert Decimal to float if necessary
-            'count': {k: float(v) if isinstance(v, decimal.Decimal) else v for k, v in count.items()}   # type: ignore
+            "count": {
+                k: float(v) if isinstance(v, decimal.Decimal) else v
+                for k, v in count.items()
+            },  # type: ignore
         }
 
         return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps(response, indent=4, separators=(',', ':'), cls=DateTimeEncoder)
+            "statusCode": 200,
+            "headers": headers(),
+            "body": json.dumps(
+                response, indent=4, separators=(",", ":"), cls=DateTimeEncoder
+            ),
         }
-  
+
     except Error as e:
         print(f"Error: {e._full_msg}")
-        
+
         return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(e._full_msg)
+            "statusCode": 500,
+            "headers": headers(),
+            "body": json.dumps(e._full_msg),
         }
-        
+
     finally:
         if cursor is not None:
             cursor.close()
         if connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
 
 def build_query(parameters):
     query = """
@@ -75,7 +83,7 @@ def build_query(parameters):
             nf.status AS status,
             nf.read_at
         FROM notices AS n
-       	JOIN notifications AS nf 
+       	JOIN notifications AS nf
         ON nf.notice_id = n.notice_id
         JOIN staff AS s
         ON s.staff_id = n.author_id
@@ -86,33 +94,34 @@ def build_query(parameters):
     query += " ORDER BY nf.status"
     params = [int(parameters["staff_id"])]
 
-    # finish prepare query and params
-    print(query)
-    print(params)
     return query, params
+
 
 ## HELPERS ##
 # Response headers
 def headers():
     return {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        }
+        "Access-Control-Allow-Headers": "*",
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": allowed_headers,
+    }
+
 
 def connect_to_db():
     return mysql.connector.connect(
-        host=os.environ.get('HOST'),
-        user=os.environ.get('USER'),
-        password=os.environ.get('PASSWORD'),
-        database="adsats_database"
+        host=os.environ.get("HOST"),
+        user=os.environ.get("USER"),
+        password=os.environ.get("PASSWORD"),
+        database="adsats_database",
     )
+
 
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
+
 
 class DecimalEncoder(json.JSONEncoder):
     def default(self, obj):

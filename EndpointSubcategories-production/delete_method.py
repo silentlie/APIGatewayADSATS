@@ -1,53 +1,60 @@
-from helper import (
-    connect_to_db,
-    json_response,
-    timer,
-    Error
-)
+from helper import Error, connect_to_db, json_response, timer
+
 
 @timer
-def delete_method(
-    body: dict
-) -> dict:
+def delete_method(body: dict) -> dict:
     """
-    Delete method
+    Handles DELETE requests to remove a subcategory record.
+
+    Args:
+        body (dict): The request body containing the ID of the subcategory to be deleted.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
+
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        subcategory_id = body["subcategory_id"]
+        subcategory_id = body["category_id"]
 
+        # Delete the subcategory with the given ID
         delete_query = """
             DELETE FROM subcategories
             WHERE subcategory_id = %s
         """
         cursor.execute(delete_query, [subcategory_id])
         connection.commit()
-        return_body = subcategory_id
+
+        # Prepare successful response
+        return_body = {"subcategory_id": subcategory_id}
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
+    # Return the JSON response
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
-#===============================================================================
+
+################################################################################
