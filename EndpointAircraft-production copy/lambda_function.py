@@ -1,8 +1,5 @@
-from delete_method import delete_method
 from get_method import get_method
-from helper import json_response, parse_body, timer
-from patch_method import patch_method
-from post_method import post_method
+from helper import json_response, timer
 
 
 @timer
@@ -34,18 +31,6 @@ def lambda_handler(event: dict, context: dict) -> dict:
         ), "queryStringParameters must be a dictionary"
         # print(f"Query parameters: {parameters}")
         return get_method(parameters)
-    elif method == "POST":
-        # Handle POST request with body parsing
-        body = parse_body(event.get("body"))
-        return post_method(body)
-    elif method == "PATCH":
-        # Handle PATCH request with body parsing
-        body = parse_body(event.get("body"))
-        return patch_method(body)
-    elif method == "DELETE":
-        # Handle DELETE request with body parsing
-        body = parse_body(event.get("body"))
-        return delete_method(body)
     else:
         # Return method not allowed response for unsupported methods
         return json_response(405, "Method not allowed")

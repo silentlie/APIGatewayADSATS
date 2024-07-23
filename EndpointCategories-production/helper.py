@@ -30,7 +30,7 @@ def parse_body(body: Any) -> dict:
     if isinstance(body, str):
         try:
             return json.loads(body)
-        except json.JSONDecodeError as e:
+        except json.JSONDecodeError:
             # Log the error for debugging
             # print(f"Error decoding JSON: {e}")
             return {}

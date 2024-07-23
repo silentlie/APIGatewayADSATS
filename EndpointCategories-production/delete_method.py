@@ -50,6 +50,8 @@ def delete_method(body: dict) -> dict:
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
+    # Return the JSON response
     response = json_response(status_code, return_body)
     print(response)
     return response

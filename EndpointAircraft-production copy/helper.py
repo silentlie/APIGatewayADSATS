@@ -1,7 +1,6 @@
 import json
 import os
 import timeit
-from datetime import datetime
 from functools import wraps
 from typing import Any
 
@@ -10,7 +9,7 @@ from mysql.connector import Error  # noqa: F401
 from mysql.connector.abstracts import MySQLCursorAbstract  # noqa: F401
 
 # Allowed HTTP methods for CORS
-allowed_headers = "OPTIONS,POST,GET,PATCH,DELETE"
+allowed_headers = "OPTIONS,GET"
 
 
 def parse_body(body: Any) -> dict:
@@ -73,22 +72,8 @@ def json_response(status_code: int, body: Any) -> dict:
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Methods": allowed_headers,
         },
-        "body": json.dumps(body, indent=4, separators=(",", ":"), cls=DateTimeEncoder),
+        "body": json.dumps(body, indent=4, separators=(",", ":")),
     }
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    """
-    Custom JSON encoder for datetime objects.
-
-    Methods:
-        default(self, o: Any): Encodes datetime objects to ISO format strings.
-    """
-
-    def default(self, o: Any):
-        if isinstance(o, datetime):
-            return o.isoformat()
-        return super().default(o)
 
 
 def timer(func):

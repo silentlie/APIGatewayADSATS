@@ -1,8 +1,8 @@
 from helper import (
-    connect_to_db, 
-    json_response, 
-    timer, 
-    Error, 
+    connect_to_db,
+    json_response,
+    timer,
+    Error,
     MySQLCursorAbstract
 )
 
@@ -11,8 +11,16 @@ def get_method(
     parameters: dict
 ) -> dict:
     """
-    Get method
+    Handles GET requests to fetch subcategory records based on various query parameters.
+
+    Args:
+        parameters (dict): The query parameters for the request.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
     try:
@@ -33,19 +41,20 @@ def get_method(
             return_body['total_records'] = total_records(cursor, query, params)
             return_body['subcategories'] = subcategories(cursor, query, params, parameters)
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-    # Catch other exeptions
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
     return_body = json_response(status_code, return_body)
@@ -57,7 +66,13 @@ def build_query(
     parameters: dict
 ) -> tuple:
     """
-    Build and return query and params
+    Builds the SQL query and parameters for fetching category records.
+
+    Args:
+        parameters (dict): The query parameters for filtering the records.
+
+    Returns:
+        tuple: The SQL query string and list of parameters.
     """
     query = """
     SELECT
@@ -89,12 +104,20 @@ def build_query(
 
 @timer
 def total_records(
-    cursor: MySQLCursorAbstract, 
-    query: str, 
+    cursor: MySQLCursorAbstract,
+    query: str,
     params: list
 ) -> int:
     """
-    Return total records
+    Returns the total number of records matching the query.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+
+    Returns:
+        int: The total number of records.
     """
     total_query = "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
     print(total_query)
@@ -108,13 +131,21 @@ def total_records(
 
 @timer
 def subcategories(
-    cursor: MySQLCursorAbstract, 
-    query: str, 
-    params: list, 
+    cursor: MySQLCursorAbstract,
+    query: str,
+    params: list,
     parameters: dict
 ) -> list:
     """
-    Return all rows based on pagination
+    Returns the total number of records matching the query.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+
+    Returns:
+        int: The total number of records.
     """
     # sort column if need it, default is pk
     valid_columns = [
@@ -129,9 +160,9 @@ def subcategories(
         "DESC"
     ]
     if (
-        'sort_column' in parameters 
-        and 'order' in parameters 
-        and parameters['sort_column'] in valid_columns 
+        'sort_column' in parameters
+        and 'order' in parameters
+        and parameters['sort_column'] in valid_columns
         and parameters['order'] in valid_orders
     ):
         query += " ORDER BY %s %s"

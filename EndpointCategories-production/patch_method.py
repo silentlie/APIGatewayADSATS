@@ -23,15 +23,11 @@ def patch_method(body: dict) -> dict:
         cursor = connection.cursor(dictionary=True)
         category_id = body["category_id"]
 
-        # Update category name if present in body
+        # Update category fields if present in body
         if "category_name" in body:
             update_category_name(cursor, body["category_name"], category_id)
-
-        # Update archived status if present in body
         if "archived" in body:
             update_archived(cursor, body["archived"], category_id)
-
-        # Update description if present in body
         if "description" in body:
             update_description(cursor, body["description"], category_id)
 
@@ -80,7 +76,7 @@ def update_category_name(
     """
     params = (category_name, category_id)
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records successfully updated")
+    print(f"{cursor.rowcount} records successfully updated")
 
 
 @timer
@@ -102,7 +98,7 @@ def update_archived(
     """
     params = (archived, category_id)
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 
 @timer
@@ -124,7 +120,7 @@ def update_description(
     """
     params = (description, category_id)
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records successfully updated")
+    print(f"{cursor.rowcount} records successfully updated")
 
 
 ################################################################################
