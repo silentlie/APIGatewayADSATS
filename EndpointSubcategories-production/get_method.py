@@ -34,6 +34,7 @@ def get_method(
             }
         else:
             raise ValueError("Invalid use of method")
+
         status_code = 200
     except Error as e:
         # Handle SQL error
@@ -60,7 +61,7 @@ def build_query(
     parameters: dict
 ) -> tuple:
     """
-    Builds the SQL query and parameters for fetching category records.
+    Builds the SQL query and parameters for fetching subcategory records.
 
     Args:
         parameters (dict): The query parameters for filtering the records.
@@ -128,15 +129,16 @@ def fetch_subcategories(
     cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """
-    Returns the total number of records matching the query.
+    Fetches subcategory records with pagination and sorting.
 
     Args:
         cursor (MySQLCursorAbstract): The database cursor for executing queries.
         query (str): The SQL query string.
         params (list): The list of query parameters.
+        parameters (dict): The query parameters for pagination and sorting.
 
     Returns:
-        int: The total number of records.
+        list: The list of subcategory records.
     """
     # sort column if need it, default is pk
     valid_columns = [

@@ -77,10 +77,10 @@ def insert_category(cursor: MySQLCursorAbstract, body: dict) -> int:
     cursor.execute(query, params)
 
     # Retrieve the last inserted ID
-    cursor.execute("SELECT LAST_INSERT_ID()")
+    cursor.execute("SELECT LAST_INSERT_ID() AS id")
     result = cursor.fetchone()
     assert isinstance(result, dict)
-    category_id = result["LAST_INSERT_ID()"]
+    category_id = result["id"]
     assert isinstance(category_id, int)
 
     print("Record inserted successfully with ID:", category_id)

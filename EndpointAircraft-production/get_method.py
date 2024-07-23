@@ -33,7 +33,7 @@ def get_method(parameters: dict) -> dict:
             }
         else:
             raise ValueError("Invalid use of method")
-
+        
         status_code = 200
     except Error as e:
         # Handle SQL error

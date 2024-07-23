@@ -11,50 +11,55 @@ def patch_method(
     body: dict
 ) -> dict:
     """
-    Patch method
+    Handles PATCH requests to update subcategory records based on the provided body.
+
+    Args:
+        body (dict): The request body containing the fields to be updated.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         subcategory_id = body['subcategory_id']
-        # Update name if present in body
+        # Update category fields if present in body
         if 'subcategory_name' in body:
             update_subcategory_name(cursor,  body['subcategory_name'],subcategory_id)
-        # Update archived value if present in body
         if 'archived' in body:
             update_archived(cursor, body['archived'], subcategory_id)
-        # Update description value if present in body
         if 'description' in body:
             update_description(cursor, body['description'], subcategory_id)
-        # Update category_id if present in body
         if 'category_id' in body:
             update_category_id(cursor, body['category_id'], subcategory_id)
+        # Commit the transaction
         connection.commit()
-        return_body = subcategory_id
+        return_body = {"category_id": subcategory_id}
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
 @timer
@@ -64,7 +69,12 @@ def update_subcategory_name(
     subcategory_id: int
 ) -> None:
     """
-    Update name
+    Updates the subcategory name.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        category_name (str): The new category name.
+        subcategory_id (int): The ID of the subcategory to update.
     """
     update_query = """
         UPDATE subcategories
@@ -73,7 +83,7 @@ def update_subcategory_name(
     """
     params = [subcategory_name, subcategory_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 @timer
 def update_archived(
@@ -82,7 +92,12 @@ def update_archived(
     subcategory_id: int
 ) -> None:
     """
-    Update archived or not
+    Updates the archived status of the subcategory.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        archived (int): The new archived status (1 for archived, 0 for not archived).
+        subcategory_id (int): The ID of the subcategory to update.
     """
     update_query = """
         UPDATE subcategories
@@ -91,7 +106,7 @@ def update_archived(
     """
     params = [archived, subcategory_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 @timer
 def update_description(
@@ -100,7 +115,12 @@ def update_description(
     subcategory_id: int,
 ) -> None:
     """
-    Update description
+    Updates the description of the subcategory.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        description (str): The new description.
+        subcategory_id (int): The ID of the subcategory to update.
     """
     update_query = """
         UPDATE subcategories
@@ -109,7 +129,7 @@ def update_description(
     """
     params = [description, subcategory_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 @timer
 def update_category_id(
@@ -118,7 +138,7 @@ def update_category_id(
     subcategory_id: int,
 ) -> None:
     """
-    Update category_id
+
     """
     update_query = """
         UPDATE subcategories
@@ -127,6 +147,6 @@ def update_category_id(
     """
     params = [category_id, subcategory_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 #===============================================================================

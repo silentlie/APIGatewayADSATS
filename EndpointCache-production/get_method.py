@@ -4,7 +4,13 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def get_method(parameters: dict) -> dict:
     """
-    return names and ids of staff, aircraft, categories, subcategories, roles
+    Handles GET requests to fetch the names and IDs of staff, aircraft, categories, subcategories, and roles.
+
+    Args:
+        parameters (dict): The query parameters for the request.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
     connection = None
     cursor = None
@@ -17,16 +23,16 @@ def get_method(parameters: dict) -> dict:
         cursor = connection.cursor(dictionary=True)
 
         if "cache" in parameters:
-            return {
-                "aircraft": aircraft(cursor),
-                "categories": categories(cursor),
-                "subcategories": subcategories(cursor),
-                "staff": staff(cursor),
-                "roles": roles(cursor),
+            return_body = {
+                "aircraft": fetch_aircraft(cursor),
+                "categories": fetch_categories(cursor),
+                "subcategories": fetch_subcategories(cursor),
+                "staff": fetch_staff(cursor),
+                "roles": fetch_roles(cursor),
             }
         else:
-            raise ValueError("Invalid use of method")
-
+            raise ValueError("Invalid use of method: 'cache' parameter is required.")
+        
         status_code = 200
     except Error as e:
         # Handle SQL error
@@ -51,7 +57,7 @@ def get_method(parameters: dict) -> dict:
 
 
 @timer
-def aircraft(cursor: MySQLCursorAbstract) -> list:
+def fetch_aircraft(cursor: MySQLCursorAbstract) -> list:
     """
     Fetches only the aircraft ID and name.
 
@@ -72,7 +78,7 @@ def aircraft(cursor: MySQLCursorAbstract) -> list:
 
 
 @timer
-def categories(cursor: MySQLCursorAbstract) -> list:
+def fetch_categories(cursor: MySQLCursorAbstract) -> list:
     """
     Fetches only the category ID and name.
 
@@ -93,7 +99,7 @@ def categories(cursor: MySQLCursorAbstract) -> list:
 
 
 @timer
-def subcategories(cursor: MySQLCursorAbstract) -> list:
+def fetch_subcategories(cursor: MySQLCursorAbstract) -> list:
     """
     Fetches only the subcategory ID and name.
 
@@ -114,7 +120,7 @@ def subcategories(cursor: MySQLCursorAbstract) -> list:
 
 
 @timer
-def staff(cursor: MySQLCursorAbstract) -> list:
+def fetch_staff(cursor: MySQLCursorAbstract) -> list:
     """
     Fetches only the staff ID and name.
 
@@ -135,9 +141,7 @@ def staff(cursor: MySQLCursorAbstract) -> list:
 
 
 @timer
-def roles(
-    cursor: MySQLCursorAbstract,
-) -> list:
+def fetch_roles(cursor: MySQLCursorAbstract) -> list:
     """
     Fetches only the role ID and name.
 
