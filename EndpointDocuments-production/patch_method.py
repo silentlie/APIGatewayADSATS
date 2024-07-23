@@ -1,133 +1,86 @@
-import mysql.connector
-import os
-import json
-from mysql.connector import Error
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
-def patch_method(body):
+@timer
+def patch_method(body: dict) -> dict:
+    """
+    Handles PATCH requests to update an existing document record.
+
+    Args:
+        body (dict): The request body containing the document details to update.
+                     Must include 'document_id' and optionally 'archived'.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+              Includes the updated 'document_id' or error details.
+    """
     connection = None
     cursor = None
-    try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
-        document_id = body['document_id']
-        if 'archived' in body:
-            update_archived_value(cursor, document_id, body['archived'])
-            connection.commit()
+    return_body = None
+    status_code = 500
 
-        if 'email' in body or 'subcategory' in body or 'file_name' in body:
-            update_document(cursor, body, document_id)
-            connection.commit()
-            
-        if 'aircraft' in body:
-            delete_aircraft_document(cursor, document_id)
-            connection.commit()
-            aircraft_ids = select_aircraft_ids(cursor, body['aircraft'])
-            insert_aircraft_document(cursor, document_id, aircraft_ids)
-            connection.commit()
+    try:
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+
+        # Ensure document_id is in body
+        if "document_id" not in body:
+            raise ValueError("Missing document_id in the request body")
+
+        document_id = body["document_id"]
+
+        # Update document fields if present in the request body
+        if "archived" in body:
+            update_archived(cursor, body["archived"], document_id)
+
+        # Commit the transaction
+        connection.commit()
+        return_body = {"document_id": document_id}
+        status_code = 200
 
     except Error as e:
-        print(f"Error: {str(e)}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps({"error": str(e)})
-        }
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
+    except Exception as e:
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': headers(),
-        'body': json.dumps(document_id)
-    }
+    # Create the response and print it
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
 
-def update_document(cursor, body, document_id):
-    file_name = body["file_name"]
-    email = body["email"]
-    subcategory = body["subcategory"]
-    
-    subcategory_id = get_subcategory_id(cursor, subcategory)
-    staff_id = get_staff_id(cursor, email)
-    
+
+@timer
+def update_archived(
+    cursor: MySQLCursorAbstract, archived: int, document_id: int
+) -> None:
+    """
+    Update the archived status of a document.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        archived (int): The new archived status (e.g., 0 for not archived, 1 for archived).
+        document_id (int): The ID of the document to update.
+    """
     update_query = """
         UPDATE documents
-        SET
-            author_id = %s,
-            subcategory_id = %s,
-            file_name = %s
-        WHERE document_id = %s
-    """
-    params = [staff_id, subcategory_id, file_name, document_id]
-    cursor.execute(update_query, params)
-
-def update_archived_value(cursor, document_id, archived):
-
-    query = """
-        UPDATE documents 
         SET archived = %s
         WHERE document_id = %s
     """
-    params = [archived , document_id] 
-    cursor.execute(query, params)
-
-def get_subcategory_id(cursor, subcategory):
-    query = "SELECT subcategory_id FROM subcategories WHERE name = %s"
-    cursor.execute(query, (subcategory,))
-    result = cursor.fetchone()
-    return result[0] if result else None
-
-def get_staff_id(cursor, email):
-    query = "SELECT staff_id FROM staff WHERE email = %s"
-    cursor.execute(query, (email,))
-    result = cursor.fetchone()
-    return result[0] if result else None
-
-def delete_aircraft_document(cursor, document_id):
-    delete_query = """ DELETE FROM aircraft_documents
-                         WHERE document_id = %s
-                        """
-    params = [document_id]
-    cursor.execute(delete_query, params)
-    
-def select_aircraft_ids(cursor, aircraft):
-    aircraft_id = []
-    for name in aircraft:
-        select_query = """
-            SELECT aircraft_id
-            FROM aircraft
-            WHERE name = %s
-        """
-        cursor.execute(select_query, (name,))
-        result = cursor.fetchone()
-        if result:
-            aircraft_id.append(result[0])
-    return aircraft_id
+    params = [archived, document_id]
+    cursor.execute(update_query, params)
+    print(f"{cursor.rowcount} record(s) successfully updated")
 
 
-def insert_aircraft_document(cursor, document_id, aircraft_ids):
-    insert_query = """
-        INSERT INTO aircraft_documents (document_id, aircraft_id)
-        VALUES (%s, %s)
-    """
-    for id in aircraft_ids:
-        params = (document_id, id)
-        cursor.execute(insert_query, params)
-
-## HELPERS ##
-# Response headers
-def headers():
-    return {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        }
+################################################################################

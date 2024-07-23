@@ -33,7 +33,7 @@ def get_method(parameters: dict) -> dict:
             query, params = build_query(parameters)
             return_body = {
                 "total_records": total_records(cursor, query, params),
-                "staff": staff(cursor, query, params, parameters),
+                "staff": fetch_staff(cursor, query, params, parameters),
             }
         else:
             raise ValueError("Invalid use of method")
@@ -128,7 +128,7 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
 
 
 @timer
-def staff(
+def fetch_staff(
     cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """

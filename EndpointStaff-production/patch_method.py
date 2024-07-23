@@ -1,4 +1,4 @@
-from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
+from helper import connect_to_db, json_response, timer, Error, MySQLCursorAbstract
 
 
 @timer
@@ -7,10 +7,10 @@ def patch_method(body: dict) -> dict:
     Handles PATCH requests to update an existing staff record.
 
     Args:
-        body (dict): The request body containing the staff details to update.
+        body (dict): The request body containing the staff details to update. Must include 'staff_id' and any other fields to update.
 
     Returns:
-        dict: The HTTP response dictionary with status code, headers, and body.
+        dict: The HTTP response dictionary with status code, headers, and body. Includes the updated 'staff_id' or error details.
     """
     connection = None
     cursor = None
@@ -74,7 +74,12 @@ def update_staff_name(
     cursor: MySQLCursorAbstract, staff_name: str, staff_id: int
 ) -> None:
     """
-    Update staff name.
+    Updates the staff name for a given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_name (str): The new staff name to set.
+        staff_id (int): The ID of the staff record to update.
     """
     update_query = """
         UPDATE staff
@@ -89,7 +94,12 @@ def update_staff_name(
 @timer
 def update_archived(cursor: MySQLCursorAbstract, archived: int, staff_id: int) -> None:
     """
-    Update archived status.
+    Updates the archived status for a given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        archived (int): The new archived status (e.g., 1 for archived, 0 for not archived).
+        staff_id (int): The ID of the staff record to update.
     """
     update_query = """
         UPDATE staff
@@ -106,7 +116,12 @@ def update_description(
     cursor: MySQLCursorAbstract, description: str, staff_id: int
 ) -> None:
     """
-    Update description.
+    Updates the description for a given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        description (str): The new description to set.
+        staff_id (int): The ID of the staff record to update.
     """
     update_query = """
         UPDATE staff
@@ -121,7 +136,11 @@ def update_description(
 @timer
 def delete_aircraft_staff(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records for aircraft.
+    Deletes all aircraft records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The ID of the staff record whose aircraft links are to be deleted.
     """
     delete_query = """
         DELETE FROM aircraft_staff
@@ -137,7 +156,12 @@ def insert_aircraft_staff(
     cursor: MySQLCursorAbstract, aircraft_ids: list, staff_id: int
 ) -> None:
     """
-    Insert into many-to-many table for aircraft.
+    Inserts new aircraft records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        aircraft_ids (list): The list of aircraft IDs to link with the staff.
+        staff_id (int): The ID of the staff record to link the aircraft IDs to.
     """
     # Delete before insert
     delete_aircraft_staff(cursor, staff_id)
@@ -153,7 +177,11 @@ def insert_aircraft_staff(
 @timer
 def delete_roles_staff(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records for roles.
+    Deletes all role records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The ID of the staff record whose role links are to be deleted.
     """
     delete_query = """
         DELETE FROM roles_staff
@@ -169,7 +197,12 @@ def insert_roles_staff(
     cursor: MySQLCursorAbstract, role_ids: list, staff_id: int
 ) -> None:
     """
-    Insert into many-to-many table for roles.
+    Inserts new role records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        role_ids (list): The list of role IDs to link with the staff.
+        staff_id (int): The ID of the staff record to link the role IDs to.
     """
     # Delete before insert
     delete_roles_staff(cursor, staff_id)
@@ -185,7 +218,11 @@ def insert_roles_staff(
 @timer
 def delete_staff_subcategories(cursor: MySQLCursorAbstract, staff_id: int) -> None:
     """
-    Delete linking records for subcategories.
+    Deletes all subcategory records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The ID of the staff record whose subcategory links are to be deleted.
     """
     delete_query = """
         DELETE FROM staff_subcategories
@@ -201,7 +238,12 @@ def insert_staff_subcategories(
     cursor: MySQLCursorAbstract, subcategory_ids: dict, staff_id: int
 ) -> None:
     """
-    Insert into many-to-many table for staff subcategories.
+    Inserts new subcategory records linked to the given staff_id.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        subcategory_ids (dict): A dictionary where keys are subcategory IDs and values are access level IDs.
+        staff_id (int): The ID of the staff record to link the subcategory IDs to.
     """
     # Delete before insert
     delete_staff_subcategories(cursor, staff_id)

@@ -1,65 +1,63 @@
-import datetime
-import json
-import os
+from helper import Error, connect_to_db, json_response, timer
 
-import mysql.connector
-from mysql.connector import Error
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
+@timer
+def delete_method(body: dict) -> dict:
+    """
+    Handles DELETE requests to remove a document record from the database.
 
-def delete_method(body):
+    Args:
+        body (dict): The request body containing the document ID to delete.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    connection = None
+    cursor = None
+    return_body = None
+    status_code = 500
+
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
+        # Establish database connection
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+
+        # Ensure document_id is in body
+        if "document_id" not in body:
+            raise ValueError("Missing document_id in the request body")
 
         document_id = body["document_id"]
 
-        if not document_id:
-            return {
-                'statusCode': 400,
-                'headers': headers(),
-                'body': json.dumps("Invalid input: document_id must be provided")
-            }
-
-        update_query = """
-            UPDATE documents
-            SET deleted_at = %s
+        delete_query = """
+            DELETE FROM documents
             WHERE document_id = %s
         """
-
-        cursor.execute(update_query, (datetime.datetime.now(), document_id))
+        cursor.execute(delete_query, [document_id])
         connection.commit()
+        return_body = {"document_id": document_id}
+        status_code = 200
 
     except Error as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps("Internal server error")
-        }
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
+    except Exception as e:
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': headers(),
-        'body': json.dumps(document_id)
-    }
+    # Create the response and print it
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
 
-## HELPERS ##
-# Response headers
-def headers():
-    return {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        }
+
+################################################################################

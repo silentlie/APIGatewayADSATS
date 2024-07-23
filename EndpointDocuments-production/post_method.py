@@ -1,139 +1,121 @@
-import json
-from mysql.connector import Error
-import mysql.connector
-import os
-from datetime import datetime
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
-def post_method(body):
+@timer
+def post_method(body: dict) -> dict:
+    """
+    Handles POST requests to insert a new document record and optionally link aircraft records.
+
+    Args:
+        body (dict): The request body containing the document details and optional aircraft IDs.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    connection = None
+    cursor = None
+    return_body = None
+    status_code = 500
+
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database",
-        )
+        # Establish database connection
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
 
-        if 'file_name' in body and 'author' in body and 'subcategory' in body:
+        # Insert the new document record and get the ID
+        document_id = insert_document(cursor, body)
 
-            cursor = connection.cursor()
+        # Insert linking records if any staff IDs are provided
+        if "staff_ids" in body:
+            insert_aircraft_documents(cursor, document_id, body["staff_ids"])
 
-            # Insert the new document record
-            document_id = insert_and_get_document_id(cursor, body)
-
-            # Insert linked aircraft_document table records if 1 or more aircraft have been selected
-            if 'aircraft' in body:
-                aircraft_ids = get_aircraft_ids_by_names(cursor, body['aircraft'])
-                insert_aircraft_document(cursor, document_id, aircraft_ids)
-            
-            
-            # Complete the commit only after all transactions have been successfully excecuted
-            # Commit changes to the database
-            connection.commit()
-
-            # Update successful message
-            print("Database updated.")
-
-            return {
-                'statusCode': 200,
-                'headers': headers(),
-                'body': json.dumps(document_id)
-            }
-
-        return {
-            'statusCode': 400,
-                'headers': headers(),
-                'body': json.dumps('Missing body parameters: Request must include file_name, author, subcategory')
-        }
-
-    except mysql.connector.Error as e:
-        # Update failed message as an error
-        print(f"Database update failed: {e}")
-
-        # Reverting changes because of exception
-        connection.rollback()
-        return server_error(e)
-
+        # Commit the transaction
+        connection.commit()
+        return_body = {"document_id": document_id}
+        status_code = 201
+    except Error as e:
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
     except Exception as e:
-        print(f"Error: {e}")
-        return server_error(e)
-        
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
-        # Close the cursor
+        # Close cursor and connection
         if cursor:
             cursor.close()
-
-        # Close the database connection
-        if connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
- 
-# Insert document record
-def insert_and_get_document_id(cursor, body):
-    file_name = body["file_name"]
-    created_at = body['created_at'] if 'created_at' in body else datetime.now()
-    archived = 1 if body["archived"] else 0
-    author_id = get_author_id(cursor, body["author"])
-    subcategory_id = get_subcategory_id(cursor, body["subcategory"])
 
-    # SQL query
-    query = """
-        INSERT INTO documents 
-            (author_id, subcategory_id, file_name, archived, created_at)
-        VALUES (%s, %s, %s, %s, %s)
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
+
+
+@timer
+def insert_document(cursor: MySQLCursorAbstract, body: dict) -> int:
     """
-    params = [author_id, subcategory_id, file_name, archived, created_at]
+    Inserts a new document record into the database.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        body (dict): The request body containing the document details.
+
+    Returns:
+        int: The ID of the newly inserted document record.
+    """
+    query = """
+    INSERT INTO documents (
+        document_name,
+        archived,
+        created_at,
+        staff_id,
+        subcategory_id
+    )
+    VALUES (%s, %s, %s, %s)
+    """
+    params = [
+        body["document_name"],
+        body["archived"],
+        body["created_at"],
+        body["staff_id"],
+        body["subcategory_id"],
+    ]
     cursor.execute(query, params)
-    return cursor.lastrowid
-
-## Insert linking table records ##
-# Insert aircraft_document records
-def insert_aircraft_document(cursor, document_id, aircraft_ids):
-    query = "INSERT INTO aircraft_documents (aircraft_id, document_id) VALUES (%s, %s)"
-    for aircraft_id in aircraft_ids:
-        cursor.execute(query, (aircraft_id, document_id))
-    
-## Get foreign key IDs ##
-def get_author_id(cursor, author):
-    query = "SELECT staff_id FROM staff WHERE email = %s"
-    cursor.execute(query, (author,))
+    cursor.execute("SELECT LAST_INSERT_ID() AS id")
     result = cursor.fetchone()
-    return result[0] if result else None
+    assert isinstance(result, dict), "Result must be a dict"
+    document_id = result["id"]
+    assert isinstance(document_id, int), "document ID must be an integer"
+    print("Record inserted successfully with ID: ", document_id)
+    return document_id
 
-def get_subcategory_id(cursor, subcategory):
-    query = "SELECT subcategory_id FROM subcategories WHERE name = %s"
-    cursor.execute(query, (subcategory,))
-    result = cursor.fetchone()
-    return result[0] if result else None
 
-def get_aircraft_ids_by_names(cursor, aircraft):
-    format_strings = ','.join(['%s'] * len(aircraft))
-    query = f"SELECT aircraft_id FROM aircraft WHERE name IN ({format_strings})"
-    cursor.execute(query, tuple(aircraft))
-    results = cursor.fetchall()
-    return [row[0] for row in results]
+@timer
+def insert_aircraft_documents(
+    cursor: MySQLCursorAbstract, document_id: int, aircraft_ids: list
+) -> None:
+    """
+    Inserts records into the aircraft_documents linking table.
 
-## HELPERS ##
-# Return server error as response
-def server_error(e):
-    return {
-            'statusCode': 500,
-            'headers': headers(),
-            'body': json.dumps(str(e))
-        }
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        document_id (int): The ID of the document.
+        aircraft_ids (list): The list of aircraft IDs to link with the document.
 
-# Response headers
-def headers():
-    return {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        }
+    Returns:
+        None
+    """
+    insert_query = """
+    INSERT INTO aircraft_documents (document_id, aircraft_id)
+    VALUES (%s, %s)
+    """
+    records_to_insert = [(document_id, staff_id) for staff_id in aircraft_ids]
+    cursor.executemany(insert_query, records_to_insert)
+    print(f"{cursor.rowcount} records successfully insseted")
 
-# For JSON date encoding
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+
+################################################################################
