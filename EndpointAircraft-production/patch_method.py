@@ -31,17 +31,17 @@ def patch_method(body: dict) -> dict:
         if "staff_ids" in body:
             insert_aircraft_staff(cursor, body["staff_ids"], aircraft_id)
         connection.commit()
-        return_body = aircraft_id
+        return_body = {"aircraft_id": aircraft_id}
         status_code = 200
     # Catch SQL exeption
     except Error as e:
-        return_body = {"error": e._full_msg}
+        # Handle SQL errors
+        return_body = {"error": e.msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict: Duplicate entry
     except Exception as e:
-        return_body = {"error": e}
+        # Handle other exceptions
+        return_body = {"error": str(e)}
     # Close cursor and connection
     finally:
         if cursor:

@@ -4,45 +4,59 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def patch_method(body: dict) -> dict:
     """
-    Patch method
+    Handles PATCH requests to update category records based on the provided body.
+
+    Args:
+        body (dict): The request body containing the fields to be updated.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
+
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         category_id = body["category_id"]
-        # Update name if present in body
-        if "category name" in body:
+
+        # Update category name if present in body
+        if "category_name" in body:
             update_category_name(cursor, body["category_name"], category_id)
-        # Update archived value if present in body
+
+        # Update archived status if present in body
         if "archived" in body:
             update_archived(cursor, body["archived"], category_id)
-        # Update description value if present in body
+
+        # Update description if present in body
         if "description" in body:
             update_description(cursor, body["description"], category_id)
+
+        # Commit the transaction
         connection.commit()
-        return_body = category_id
+        return_body = {"category_id": category_id}
         status_code = 200
     # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
             # Code 409 means conflict in the state of the server
             status_code = 409
     # Catch other exeptions
     except Exception as e:
-        return_body = f"SQL Error: {e}"
+        return_body = {"error": str(e)}
     # Close cursor and connection
     finally:
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
+
     response = json_response(status_code, return_body)
     print(response)
     return response
@@ -53,7 +67,12 @@ def update_category_name(
     cursor: MySQLCursorAbstract, category_name: str, category_id: int
 ) -> None:
     """
-    Update name
+    Updates the category name.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        category_name (str): The new category name.
+        category_id (int): The ID of the category to update.
     """
     update_query = """
         UPDATE categories
@@ -62,7 +81,7 @@ def update_category_name(
     """
     params = (category_name, category_id)
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(cursor.rowcount, " records successfully updated")
 
 
 @timer
@@ -70,14 +89,19 @@ def update_archived(
     cursor: MySQLCursorAbstract, archived: int, category_id: int
 ) -> None:
     """
-    Update archived or not
+    Updates the archived status of the category.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        archived (int): The new archived status (1 for archived, 0 for not archived).
+        category_id (int): The ID of the category to update.
     """
     update_query = """
         UPDATE categories
         SET archived = %s
         WHERE category_id = %s
     """
-    params = [archived, category_id]
+    params = (archived, category_id)
     cursor.execute(update_query, params)
     print(cursor.rowcount, " records updated successfully")
 
@@ -87,7 +111,12 @@ def update_description(
     cursor: MySQLCursorAbstract, description: str, category_id: int
 ) -> None:
     """
-    Update description
+    Updates the description of the category.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        description (str): The new description.
+        category_id (int): The ID of the category to update.
     """
     update_query = """
         UPDATE categories
@@ -96,6 +125,7 @@ def update_description(
     """
     params = (description, category_id)
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(cursor.rowcount, " records successfully updated")
+
 
 ################################################################################

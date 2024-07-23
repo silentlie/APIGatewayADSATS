@@ -4,7 +4,7 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def get_method(parameters: dict) -> dict:
     """
-    Handles GET requests to fetch aircraft records based on various procedures.
+    Handles GET requests to fetch aircraft records based on various query parameters.
 
     Args:
         parameters (dict): The query parameters for the request.
@@ -29,13 +29,13 @@ def get_method(parameters: dict) -> dict:
             query, params = build_query(parameters)
             return_body = {
                 "total_records": total_records(cursor, query, params),
-                "aircraft": aircraft(cursor, query, params, parameters),
+                "aircraft": fetch_aircraft(cursor, query, params, parameters),
             }
         else:
             raise ValueError("Invalid use of method")
 
         status_code = 200
-
+    # Catch SQL exeption
     except Error as e:
         # Handle SQL errors
         return_body = {"error": e.msg}
@@ -44,8 +44,8 @@ def get_method(parameters: dict) -> dict:
     except Exception as e:
         # Handle other exceptions
         return_body = {"error": str(e)}
+    # Close cursor and connection
     finally:
-        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
@@ -70,9 +70,9 @@ def build_query(parameters: dict) -> tuple:
         tuple: The SQL query string and list of parameters.
     """
     query = """
-        SELECT
-            *
-        FROM aircraft
+    SELECT
+        *
+    FROM aircraft
     """
     filters = []
     params = []
@@ -110,9 +110,9 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
         int: The total number of records.
     """
     total_query = f"""
-        SELECT
-            COUNT(*) as total_records
-        FROM ({query}) AS initial_query
+    SELECT
+        COUNT(*) AS total_records
+    FROM ({query}) AS initial_query
     """
     cursor.execute(total_query, params)
     result = cursor.fetchone()
@@ -123,7 +123,7 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
 
 
 @timer
-def aircraft(
+def fetch_aircraft(
     cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """
@@ -178,10 +178,10 @@ def name_only(cursor: MySQLCursorAbstract) -> list:
         list: The list of aircraft IDs and names.
     """
     query = """
-        SELECT
-            aircraft_id,
-            aircraft_name
-        FROM aircraft
+    SELECT
+        aircraft_id,
+        aircraft_name
+    FROM aircraft
     """
     cursor.execute(query)
     return cursor.fetchall()
@@ -200,10 +200,10 @@ def specific_aircraft_staff(cursor: MySQLCursorAbstract, aircraft_id: int) -> li
         list: The list of staff IDs.
     """
     query = """
-        SELECT
-            staff_id
-        FROM aircraft_staff
-        WHERE aircraft_id = %s
+    SELECT
+        staff_id
+    FROM aircraft_staff
+    WHERE aircraft_id = %s
     """
     cursor.execute(query, [aircraft_id])
     return cursor.fetchall()

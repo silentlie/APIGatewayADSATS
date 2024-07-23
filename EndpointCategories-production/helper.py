@@ -12,8 +12,19 @@ from mysql.connector.abstracts import MySQLCursorAbstract  # noqa: F401
 allowed_headers = "OPTIONS,POST,GET,PATCH,DELETE"
 
 
-# check body is JSON
 def parse_body(body: Any) -> dict:
+    """
+    Parses the body of a request to ensure it is JSON.
+
+    Args:
+        body (Any): The body of the request, which can be a JSON string or a dictionary.
+
+    Returns:
+        dict: The parsed JSON as a dictionary.
+
+    Raises:
+        ValueError: If the body is not a valid JSON string or dictionary.
+    """
     print(body)
     if isinstance(body, str):
         try:
@@ -28,8 +39,13 @@ def parse_body(body: Any) -> dict:
         raise ValueError("Body is not JSON")
 
 
-# connect to db
 def connect_to_db():
+    """
+    Connects to the MySQL database using credentials from environment variables.
+
+    Returns:
+        mysql.connector.abstracts.MySQLConnectionAbstract: The connection object to the database.
+    """
     return mysql.connector.connect(
         host=os.environ.get("HOST"),
         user=os.environ.get("USER"),
@@ -38,8 +54,17 @@ def connect_to_db():
     )
 
 
-# return JSON response
 def json_response(status_code: int, body: Any) -> dict:
+    """
+    Generates a JSON response with the given status code and body.
+
+    Args:
+        status_code (int): The HTTP status code for the response.
+        body (Any): The body of the response, which will be JSON encoded.
+
+    Returns:
+        dict: The HTTP response dictionary with headers and body.
+    """
     return {
         "statusCode": status_code,
         "headers": {
@@ -51,16 +76,31 @@ def json_response(status_code: int, body: Any) -> dict:
     }
 
 
-# for dump datetime json format
 class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj: Any):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
+    """
+    Custom JSON encoder for datetime objects.
+
+    Methods:
+        default(self, o: Any): Encodes datetime objects to ISO format strings.
+    """
+
+    def default(self, o: Any):
+        if isinstance(o, datetime):
+            return o.isoformat()
+        return super().default(o)
 
 
-# timing how long function take
 def timer(func):
+    """
+    Decorator that prints the execution time of the decorated function.
+
+    Args:
+        func (Callable): The function to be timed.
+
+    Returns:
+        Callable: The wrapped function with timing.
+    """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         print(f"Start {func.__name__}")
@@ -71,5 +111,6 @@ def timer(func):
         return _result
 
     return wrapper
+
 
 ################################################################################

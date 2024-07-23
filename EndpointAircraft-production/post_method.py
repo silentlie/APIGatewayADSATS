@@ -33,7 +33,7 @@ def post_method(body: dict) -> dict:
         connection.commit()
         return_body = {"aircraft_id": aircraft_id}
         status_code = 200
-
+    # Catch SQL exeption
     except Error as e:
         # Handle SQL errors
         return_body = {"error": e.msg}
@@ -42,8 +42,8 @@ def post_method(body: dict) -> dict:
     except Exception as e:
         # Handle other exceptions
         return_body = {"error": str(e)}
+    # Close cursor and connection
     finally:
-        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")

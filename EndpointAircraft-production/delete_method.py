@@ -21,7 +21,7 @@ def delete_method(body: dict) -> dict:
         """
         cursor.execute(delete_query, [aircraft_id])
         connection.commit()
-        return_body = aircraft_id
+        return_body = {"aircraft_id": aircraft_id}
         status_code = 200
 
     # Catch SQL exeption
@@ -32,7 +32,7 @@ def delete_method(body: dict) -> dict:
             status_code = 409
     # Catch other exeptions
     except Exception as e:
-        return_body = {"error": e}
+        return_body = {"error": str(e)}
     # Close cursor and connection
     finally:
         if cursor:
