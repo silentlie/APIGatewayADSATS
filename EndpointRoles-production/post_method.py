@@ -28,7 +28,7 @@ def post_method(body: dict) -> dict:
         # Commit the transaction
         connection.commit()
         return_body = {"role_id": role_id}
-        status_code = 200
+        status_code = 201
     except Error as e:
         # Handle SQL error
         return_body = {"error": e._full_msg}

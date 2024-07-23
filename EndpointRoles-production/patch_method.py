@@ -11,25 +11,33 @@ def patch_method(
     body: dict
 ) -> dict:
     """
-    Patch method
+    Handles PATCH requests to update role records based on the provided body.
+
+    Args:
+        body (dict): The request body containing the fields to be updated.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
     connection = None
     cursor = None
     return_body = None
     status_code = 500
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         role_id = body['role_id']
-        # Update name if present in body
+
+        # Update role fields if present in body
         if 'role_name' in body:
             update_role_name(cursor,  body['role_name'],role_id)
-        # Update archived value if present in body
         if 'archived' in body:
             update_archived(cursor, body['archived'], role_id)
-        # Update description value if present in body
         if 'description' in body:
             update_description(cursor, body['description'], role_id)
+
+        # Commit the transaction
         connection.commit()
         return_body = {"role_id": role_id}
         status_code = 200
@@ -60,7 +68,12 @@ def update_role_name(
     role_id: int
 ) -> None:
     """
-    Update name
+    Updates the role name.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        role_name (str): The new role name.
+        role_id (int): The ID of the role to update.
     """
     update_query = """
         UPDATE roles
@@ -69,7 +82,7 @@ def update_role_name(
     """
     params = [role_name, role_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 @timer
 def update_archived(
@@ -78,7 +91,12 @@ def update_archived(
     role_id: int
 ) -> None:
     """
-    Update archived or not
+    Updates the archived status of the role.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        archived (int): The new archived status (1 for archived, 0 for not archived).
+        role_id (int): The ID of the role to update.
     """
     update_query = """
         UPDATE roles
@@ -87,7 +105,7 @@ def update_archived(
     """
     params = [archived, role_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 @timer
 def update_description(
@@ -96,7 +114,12 @@ def update_description(
     role_id: int,
 ) -> None:
     """
-    Update description
+    Updates the description of the role.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        description (str): The new description.
+        role_id (int): The ID of the role to update.
     """
     update_query = """
         UPDATE roles
@@ -105,6 +128,6 @@ def update_description(
     """
     params = [description, role_id]
     cursor.execute(update_query, params)
-    print(cursor.rowcount, " records updated successfully")
+    print(f"{cursor.rowcount} records successfully updated")
 
 #===============================================================================

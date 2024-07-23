@@ -30,7 +30,7 @@ def post_method(body: dict) -> dict:
 
         # Prepare successful response
         return_body = {"category_id": category_id}
-        status_code = 200
+        status_code = 201
     except Error as e:
         # Handle SQL error
         return_body = {"error": e._full_msg}
