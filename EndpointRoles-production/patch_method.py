@@ -13,6 +13,8 @@ def patch_method(
     """
     Patch method
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
     try:
@@ -29,29 +31,26 @@ def patch_method(
         if 'description' in body:
             update_description(cursor, body['description'], role_id)
         connection.commit()
-        return_body = role_id
+        return_body = {"role_id": role_id}
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-        # Error no 1062 means duplicate name
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
         if e.errno == 1062:
-            # Code 409 means conflict in the state of the server
-            status_code = 409
-    # Catch other exeptions
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
     response = json_response(status_code, return_body)
-    print (response)
+    print(response)
     return response
 
 @timer

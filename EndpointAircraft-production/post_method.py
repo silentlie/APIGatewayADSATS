@@ -68,7 +68,12 @@ def insert_aircraft(cursor: MySQLCursorAbstract, body: dict) -> int:
         int: The ID of the newly inserted aircraft record.
     """
     query = """
-    INSERT INTO aircraft (aircraft_name, archived, created_at, description)
+    INSERT INTO aircraft (
+        aircraft_name,
+        archived,
+        created_at,
+        description
+    )
     VALUES (%s, %s, %s, %s)
     """
     params = [

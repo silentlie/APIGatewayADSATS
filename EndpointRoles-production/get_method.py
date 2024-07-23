@@ -69,8 +69,7 @@ def build_query(parameters: dict) -> tuple:
         tuple: The SQL query string and list of parameters.
     """
     query = """
-    SELECT
-        *
+    SELECT *
     FROM roles
     """
     filters = []
@@ -79,18 +78,20 @@ def build_query(parameters: dict) -> tuple:
     # Add filters based on parameters
     if "search" in parameters:
         filters.append("role_name LIKE %s")
-        params.append(parameters["search"])
+        params.append(f"%{parameters['search']}%")
     if "archived" in parameters:
         filters.append("archived = %s")
         params.append(parameters["archived"])
     if "created_at" in parameters:
-        created_at = parameters["start_at"].split(",")
-        filters.append("start_at BETWEEN %s AND %s")
+        created_at_str = parameters["created_at"]
+        assert isinstance(created_at_str, str), "created_at_str is not a str"
+        created_at = created_at_str.split(",")
+        filters.append("created_at BETWEEN %s AND %s")
         params.extend(created_at)
-    
+
     # Append filters to the query
     if filters:
-        query += "WHERE " + " AND ".join(filters)
+        query += " WHERE " + " AND ".join(filters)
 
     return query, params
 
@@ -108,9 +109,8 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     Returns:
         int: The total number of records.
     """
-    total_query = (
-        "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-    )
+    # Modify the query for counting total records
+    total_query = f"SELECT COUNT(*) as total_records FROM ({query}) AS initial_query"
     print(total_query)
     print(params)
     cursor.execute(total_query, params)
@@ -149,8 +149,9 @@ def fetch_roles(
         query += " ORDER BY %s %s"
         params.append(parameters["sort_column"])
         params.append(parameters["order"])
+
     # Add pagination
-    query += " LIMIT %s OFFSET %s "
+    query += " LIMIT %s OFFSET %s"
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
 
@@ -173,8 +174,7 @@ def specific_role_staff(
         list: The list of staff IDs.
     """
     query = """
-    SELECT
-        staff_id
+    SELECT staff_id
     FROM roles_staff
     WHERE role_id = %s
     """
@@ -182,9 +182,4 @@ def specific_role_staff(
     return [num for (num,) in cursor.fetchall()]
 
 
-# ===============================================================================
-# parameters = {
-#     'method': "specific_role_staff",
-#     'role_id': 1
-# }
-# get_method(parameters)
+################################################################################

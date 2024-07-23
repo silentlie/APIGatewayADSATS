@@ -81,7 +81,9 @@ def build_query(parameters: dict) -> tuple:
         params.append(parameters["archived"])
     # filter based on date range when it was added
     if "created_at" in parameters:
-        created_at = parameters["start_at"].split(",")
+        created_at_str = parameters["created_at"]
+        assert isinstance(created_at_str, str), "created_at_str is not a str"
+        created_at = created_at_str.split(",")
         filters.append("start_at BETWEEN %s AND %s")
         params.extend(created_at)
     # if there is any filter add to query
