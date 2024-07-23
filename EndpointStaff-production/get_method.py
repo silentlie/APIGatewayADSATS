@@ -4,63 +4,72 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def get_method(parameters: dict) -> dict:
     """
-    Get method
+    Handles GET requests to fetch staff records based on various query parameters.
+
+    Args:
+        parameters (dict): The query parameters for the request.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
     """
+    connection = None
+    cursor = None
     return_body = None
     status_code = 500
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        # This may not be the optimal way to handle get method with multiple cases
-        valid_procedures = [
-            "name_only",
-            "staff",
-            "specific_staff",
-        ]
-        if (
-            "procedure" not in parameters
-            or parameters["procedure"] not in valid_procedures
-        ):
-            raise ValueError("Invalid procedure")
-        elif parameters["procedure"] == "name_only":
-            return_body = name_only(cursor)
-        elif parameters["procedure"] == "staff":
-            query, params = build_query(parameters)
-            return_body = {}
-            return_body["total_records"] = total_records(cursor, query, params)
-            return_body["staff"] = staff(cursor, query, params, parameters)
-        elif parameters["procedure"] == "specific_staff":
+
+        if "staff_id" in parameters:
             staff_id = int(parameters["staff_id"])
-            cursor = connection.cursor()
             return_body = {
                 "aircraft_ids": specific_aircraft_staff(cursor, staff_id),
                 "role_ids": specific_role_staff(cursor, staff_id),
                 "subcategory_ids": specific_staff_subcategories(cursor, staff_id),
             }
+        elif "limit" in parameters and "offset" in parameters:
+            query, params = build_query(parameters)
+            return_body = {
+                "total_records": total_records(cursor, query, params),
+                "staff": staff(cursor, query, params, parameters),
+            }
+        else:
+            raise ValueError("Invalid use of method")
+
         status_code = 200
-    # Catch SQL exeption
     except Error as e:
-        return_body = f"SQL Error: {e._full_msg}"
-    # Catch other exeptions
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
     except Exception as e:
-        return_body = f"SQL Error: {e}"
-    # Close cursor and connection
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
             print("MySQL cursor is closed")
-        if connection.is_connected():
-            cursor.close()
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
-    return_body = json_response(status_code, return_body)
-    return return_body
+
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
 
 
 @timer
 def build_query(parameters: dict) -> tuple:
     """
-    Build and return query and params
+    Builds the SQL query and parameters for fetching staff records.
+
+    Args:
+        parameters (dict): The query parameters for filtering the records.
+
+    Returns:
+        tuple: The SQL query string and list of parameters.
     """
     query = """
     SELECT
@@ -96,7 +105,15 @@ def build_query(parameters: dict) -> tuple:
 @timer
 def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     """
-    Return total records
+    Returns the total number of records matching the query.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+
+    Returns:
+        int: The total number of records.
     """
     total_query = (
         "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
@@ -116,7 +133,16 @@ def staff(
     cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
 ) -> list:
     """
-    Return all rows based on pagination
+    Fetches staff records with pagination and sorting.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+        parameters (dict): The query parameters for pagination and sorting.
+
+    Returns:
+        list: The list of staff records.
     """
     # sort column if need it, default is pk
     valid_columns = [
@@ -143,21 +169,6 @@ def staff(
     # finish query
 
     cursor.execute(query, params)
-    return cursor.fetchall()
-
-
-@timer
-def name_only(cursor: MySQLCursorAbstract) -> list:
-    """
-    Return id and name only
-    """
-    query = """
-        SELECT
-            staff_id,
-            staff_name
-        FROM staff
-    """
-    cursor.execute(query)
     return cursor.fetchall()
 
 
@@ -207,7 +218,7 @@ def specific_staff_subcategories(cursor: MySQLCursorAbstract, staff_id: int) -> 
     return cursor.fetchall()
 
 
-# ===========================================================================
+################################################################################
 # parameters = {
 #     'procedure': "staff",
 #     'limit': "20",
