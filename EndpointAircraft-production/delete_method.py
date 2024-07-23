@@ -21,6 +21,11 @@ def delete_method(body: dict) -> dict:
         # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
+
+        # Ensure aircraft_id is in body
+        if "aircraft_id" not in body:
+            raise ValueError("Missing aircraft_id in the request body")
+
         aircraft_id = body["aircraft_id"]
 
         # Execute the delete query

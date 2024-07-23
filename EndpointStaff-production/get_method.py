@@ -16,6 +16,7 @@ def get_method(parameters: dict) -> dict:
     cursor = None
     return_body = None
     status_code = 500
+
     try:
         # Establish database connection
         connection = connect_to_db()
@@ -76,29 +77,29 @@ def build_query(parameters: dict) -> tuple:
         *
     FROM staff
     """
-    # define filters if any
+    # Define filters if any
     filters = []
-    # parameters for binding
+    # Parameters for binding
     params = []
-    # search for name
+    # Search for name
     if "search" in parameters:
         filters.append("staff_name LIKE %s")
-        params.append(parameters["search"])
-    # filter based on archived or not
+        params.append(f"%{parameters['search']}%")
+    # Filter based on archived or not
     if "archived" in parameters:
         filters.append("archived = %s")
         params.append(parameters["archived"])
-    # filter based on date range when it was added
+    # Filter based on date range when it was added
     if "created_at" in parameters:
         created_at_str = parameters["created_at"]
         assert isinstance(created_at_str, str), "created_at_str is not a str"
         created_at = created_at_str.split(",")
-        filters.append("start_at BETWEEN %s AND %s")
+        filters.append("created_at BETWEEN %s AND %s")
         params.extend(created_at)
-    # if there is any filter add to query
+    # If there are any filters, add them to the query
     if filters:
-        query += "WHERE " + " AND ".join(filters)
-    # finish prepare query and params
+        query += " WHERE " + " AND ".join(filters)
+    # Finish preparing query and params
     return query, params
 
 
@@ -115,16 +116,14 @@ def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     Returns:
         int: The total number of records.
     """
-    total_query = (
-        "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-    )
+    total_query = f"SELECT COUNT(*) as total_records FROM ({query}) AS initial_query"
     print(total_query)
     print(params)
     cursor.execute(total_query, params)
     result = cursor.fetchone()
-    assert isinstance(result, dict)
+    assert isinstance(result, dict), "Result must be a dict"
     total_records = result["total_records"]
-    assert isinstance(total_records, int)
+    assert isinstance(total_records, int), "Total records must be an integer"
     return total_records
 
 
@@ -144,7 +143,7 @@ def staff(
     Returns:
         list: The list of staff records.
     """
-    # sort column if need it, default is pk
+    # Sort column if needed, default is pk
     valid_columns = [
         "staff_id",
         "staff_name",
@@ -162,12 +161,11 @@ def staff(
         query += " ORDER BY %s %s"
         params.append(parameters["sort_column"])
         params.append(parameters["order"])
-    # pagination
-    query += " LIMIT %s OFFSET %s "
+    # Pagination
+    query += " LIMIT %s OFFSET %s"
     params.append(int(parameters["limit"]))
     params.append(int(parameters["offset"]))
-    # finish query
-
+    # Finish query
     cursor.execute(query, params)
     return cursor.fetchall()
 
@@ -175,7 +173,14 @@ def staff(
 @timer
 def specific_aircraft_staff(cursor: MySQLCursorAbstract, staff_id: int) -> list:
     """
-    Return a list of aircraft linked with specific id
+    Returns a list of aircraft linked with a specific staff ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The staff ID to query.
+
+    Returns:
+        list: The list of aircraft IDs.
     """
     query = """
         SELECT
@@ -190,7 +195,14 @@ def specific_aircraft_staff(cursor: MySQLCursorAbstract, staff_id: int) -> list:
 @timer
 def specific_role_staff(cursor: MySQLCursorAbstract, staff_id: int) -> list:
     """
-    Return a list of roles linked with specific id
+    Returns a list of roles linked with a specific staff ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The staff ID to query.
+
+    Returns:
+        list: The list of role IDs.
     """
     query = """
         SELECT
@@ -205,11 +217,18 @@ def specific_role_staff(cursor: MySQLCursorAbstract, staff_id: int) -> list:
 @timer
 def specific_staff_subcategories(cursor: MySQLCursorAbstract, staff_id: int) -> list:
     """
-    Return a list of subcategories linked with specific id
+    Returns a list of subcategories linked with a specific staff ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        staff_id (int): The staff ID to query.
+
+    Returns:
+        list: The list of subcategory IDs and access level IDs.
     """
     query = """
         SELECT
-            subcategorie_id,
+            subcategory_id,
             access_level_id
         FROM staff_subcategories
         WHERE staff_id = %s
@@ -219,9 +238,3 @@ def specific_staff_subcategories(cursor: MySQLCursorAbstract, staff_id: int) -> 
 
 
 ################################################################################
-# parameters = {
-#     'procedure': "staff",
-#     'limit': "20",
-#     'offset': "0"
-# }
-# get_method(parameters)
