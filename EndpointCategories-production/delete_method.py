@@ -31,9 +31,9 @@ def delete_method(body: dict) -> dict:
         cursor.execute(delete_query, [category_id])
         connection.commit()
 
-        # Prepare successful response
         return_body = {"category_id": category_id}
         status_code = 200
+
     except Error as e:
         # Handle SQL error
         return_body = {"error": e._full_msg}
@@ -50,8 +50,6 @@ def delete_method(body: dict) -> dict:
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
-
-    # Return the JSON response
     response = json_response(status_code, return_body)
     print(response)
     return response
