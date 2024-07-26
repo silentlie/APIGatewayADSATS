@@ -1,59 +1,63 @@
-import mysql.connector
-import os
-import json
-import datetime
-from mysql.connector import Error
+from helper import Error, connect_to_db, json_response, timer
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
-def delete_method(body):
+@timer
+def delete_method(body: dict) -> dict:
+    """
+    Handles DELETE requests to remove a notice record from the database.
+
+    Args:
+        body (dict): The request body containing the notice ID to delete.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    connection = None
+    cursor = None
+    return_body = None
+    status_code = 500
+
     try:
-        connection = mysql.connector.connect(
-            host=os.environ.get('HOST'),
-            user=os.environ.get('USER'),
-            password=os.environ.get('PASSWORD'),
-            database="adsats_database"
-        )
-        cursor = connection.cursor()
+        # Establish database connection
+        connection = connect_to_db()
+        cursor = connection.cursor(dictionary=True)
+
+        # Ensure notice_id is in body
+        if "notice_id" not in body:
+            raise ValueError("Missing notice_id in the request body")
 
         notice_id = body["notice_id"]
 
-        if not notice_id:
-            return {
-                'statusCode': 400,
-                'body': json.dumps("Invalid input: notice_id must be provided")
-            }
-
-        update_query = """
-            UPDATE notices 
-            SET deleted_at = %s
-            WHERE notice_id = %s;
+        delete_query = """
+            DELETE FROM notices
+            WHERE notice_id = %s
         """
-
-        cursor.execute(update_query, (datetime.datetime.now(), notice_id))
+        cursor.execute(delete_query, [notice_id])
         connection.commit()
+        return_body = {"notice_id": notice_id}
+        status_code = 200
 
     except Error as e:
-        print(f"Error: {e}")
-        return {
-            'statusCode': 500,
-            'body': json.dumps("Internal server error")
-        }
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
+    except Exception as e:
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
+        # Close cursor and connection
         if cursor:
             cursor.close()
+            print("MySQL cursor is closed")
         if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
-    return {
-        'statusCode': 200,
-        'headers': {
-            'Access-Control-Allow-Headers': '*',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': allowed_headers
-        },
-        'body': json.dumps(notice_id)
-    }
+    # Create the response and print it
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
 
 
+################################################################################

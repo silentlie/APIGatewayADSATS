@@ -1,235 +1,231 @@
-import json
-import os
-from datetime import datetime
-
-import mysql.connector
-from mysql.connector import Error
-
-allowed_headers = "OPTIONS,POST,GET,PATCH,DELETE"
+from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, timer
 
 
-def get_method(parameters):
-    ## Get all notices - for table view
+@timer
+def get_method(parameters: dict) -> dict:
+    """
+    Handles GET requests to fetch notice records based on various query parameters.
+
+    Args:
+        parameters (dict): The query parameters for the request.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    connection = None
+    cursor = None
+    return_body = None
+    status_code = 500
 
     try:
+        # Establish database connection
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
-        if "notice_id" in parameters:
-            print("start get specific")
-            return get_specific_notice(
-                cursor, parameters["staff_id"], parameters["notice_id"]
-            )
-        query, params = build_query(parameters)
-        total_query = (
-            "SELECT COUNT(*) as total_records FROM (" + query + ") AS initial_query"
-        )
 
-        cursor = connection.cursor()
-        cursor.execute(total_query, params)
-        total_records = cursor.fetchone()[0]  # type: ignore
+        if "limit" in parameters and "offset" in parameters:
+            query, params = build_query(parameters)
+            return_body = {
+                "total_records": total_records(cursor, query, params),
+                "notices": fetch_notices(cursor, query, params, parameters),
+            }
+        elif "notice_id" in parameters:
+            notice_id = parameters["notice_id"]
+            return_body = {
+                "aircraft": specific_aircraft_notices(cursor, notice_id),
+                "staff": specific_notices_staff(cursor, notice_id),
+            }
+        else:
+            raise ValueError("Invalid use of method")
 
-        cursor = connection.cursor(dictionary=True)
-        query += " LIMIT %s OFFSET %s"
-        limit = int(parameters["limit"])
-        offset = int(parameters["offset"])
-        params.extend([limit, offset])
-
-        cursor.execute(query, params)
-        rows = cursor.fetchall()
-        response = {"total_records": total_records, "rows": rows}
-        return {
-            "statusCode": 200,
-            "headers": headers(),
-            "body": json.dumps(
-                response, indent=4, separators=(",", ":"), cls=DateTimeEncoder
-            ),
-        }
-
+        status_code = 200
     except Error as e:
-        print(f"Error: {e._full_msg}")
-
-        return {
-            "statusCode": 500,
-            "headers": headers(),
-            "body": json.dumps(e._full_msg),
-        }
-
+        # Handle SQL error
+        return_body = {"error": e._full_msg}
+        if e.errno == 1062:
+            status_code = 409  # Conflict error
+    except Exception as e:
+        # Handle general error
+        return_body = {"error": str(e)}
     finally:
-        if cursor is not None:
+        # Close cursor and connection
+        if cursor:
             cursor.close()
-        if connection.is_connected():
+            print("MySQL cursor is closed")
+        if connection and connection.is_connected():
             connection.close()
             print("MySQL connection is closed")
 
+    response = json_response(status_code, return_body)
+    print(response)
+    return response
 
-def build_query(parameters):
+
+@timer
+def build_query(parameters: dict) -> tuple:
+    """
+    Builds the SQL query and parameters for fetching notice records.
+
+    Args:
+        parameters (dict): The query parameters for filtering the records.
+
+    Returns:
+        tuple: The SQL query string and list of parameters.
+    """
     query = """
     SELECT
-        n.notice_id,
-        s.email AS author,
-        GROUP_CONCAT(DISTINCT r.role SEPARATOR ', ') AS roles,
-        n.category,
-        n.subject,
-        n.resolved,
-        n.issued,
-        n.archived,
-        n.notice_at,
-        n.deadline_at
+        n.*
     FROM notices AS n
-   	JOIN staff AS s
-    ON s.staff_id = n.author_id
-    JOIN staff_roles AS sr
-    ON s.staff_id = sr.staff_id
-    JOIN roles AS r
-    ON r.role_id = sr.role_id
+    JOIN notices_staff AS ns
+    ON n.notice_id = ns.notice_id
     """
-
     filters = []
     params = []
 
-    if "staff_id" in parameters:
-        query += " JOIN notifications AS nf ON nf.notice_id = n.notice_id "
-        filters.append(" nf.staff_id = %s")
-        params.append(parameters["staff_id"])
+    if "staff_id" not in parameters:
+        raise ValueError("staff_id is required")
+    staff_id = parameters["staff_id"]
 
-    # only return notices that this user is received
-    query += " WHERE n.deleted_at is Null"
+    if "tab" in parameters:
+        tab = parameters["tab"]
+        if tab == "inbox":
+            filters.append("n.staff_id = %s")
+        elif tab == "sent":
+            filters.append("ns.staff_id = %s")
+        else:
+            raise ValueError("Invalid tab value")
+    else:
+        raise ValueError("tab is required")
+
+    params.append(staff_id)
 
     if "search" in parameters:
-        filters.append("subject LIKE %s")
-        params.append(parameters["search"])
-
-    if "categories" in parameters:
-        categories = parameters["category"].split(",")
-        placeholders = ", ".join(["%s"] * len(categories))
-        filters.append(f"category IN ({placeholders})")
-        params.extend(categories)
-
-    if "roles" in parameters:
-        roles = parameters["roles"].split(",")
-        placeholders = ", ".join(["%s"] * len(roles))
-        filters.append(f"r.role IN ({placeholders})")
-        params.extend(roles)
-
-    if "authors" in parameters:
-        emails = parameters["authors"].split(",")
-        placeholders = ", ".join(["%s"] * len(emails))
-        filters.append(f"s.email IN ({placeholders})")
-        params.extend(emails)
-
+        filters.append("notice_name LIKE %s")
+        params.append(f"%{parameters['search']}%")
     if "archived" in parameters:
-        # Ensure archived is a valid value to prevent SQL injection
-        # Add other valid value if necessar
-        valid_value = ["true", "false"]
-        if parameters["archived"] in valid_value:
-            # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"n.archived = {parameters["archived"]}")
+        filters.append("archived = %s")
+        params.append(parameters["archived"])
+    if "created_at" in parameters:
+        created_at = parameters["created_at"].split(",")
+        filters.append("created_at BETWEEN %s AND %s")
+        params.extend(created_at)
 
-    if "resolved" in parameters:
-        # Ensure archived is a valid value to prevent SQL injection
-        # Add other valid value if necessar
-        valid_value = ["true", "false"]
-        if parameters["resolved"] in valid_value:
-            # in this part must parse as str cannot use binding because bool cannot be str
-            filters.append(f"resolved = {parameters["resolved"]}")
-
-    if "notice_at" in parameters:
-        notice_at = parameters["notice_at"].split(",")
-        filters.append("notice_at BETWEEN %s AND %s")
-        params.extend(notice_at)
-
-    if "deadline_at" in parameters:
-        deadline_at = parameters["deadline_at"].split(",")
-        filters.append("n.deadline_at BETWEEN %s AND %s")
-        params.extend(deadline_at)
-    # if there is any filter add base query
     if filters:
-        query += " AND " + " AND ".join(filters)
-
-    query += " GROUP BY n.notice_id"
-
-    if "sort_column" in parameters:
-        # Ensure sort_column is a valid column name to prevent SQL injection
-        # Add other valid column names if necessary
-        valid_columns = [
-            "notice_id",
-            "email",
-            "category",
-            "subject",
-            "resolved",
-            "archived",
-            "notice_at",
-            "deadline_at",
-        ]
-        if parameters["sort_column"] in valid_columns:
-            # asc if true, desk if false
-            order = "ASC" if parameters["asc"] == "true" else "DESC"
-            # in this part must parse as str cannot use binding because sort_column cannot be str
-            query += f" ORDER BY {parameters["sort_column"]} {order}"
+        query += " WHERE " + " AND ".join(filters)
 
     return query, params
 
 
-# create a connect to db
-def connect_to_db():
-    return mysql.connector.connect(
-        host=os.environ.get("HOST"),
-        user=os.environ.get("USER"),
-        password=os.environ.get("PASSWORD"),
-        database="adsats_database",
-    )
-
-
-## HELPERS ##
-# Response headers
-def headers():
-    return {
-        "Access-Control-Allow-Headers": "*",
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Methods": allowed_headers,
-    }
-
-
-class DateTimeEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, datetime):
-            return obj.isoformat()
-        return super().default(obj)
-
-
-def get_specific_notice(cursor, staff_id, notice_id):
-    query = """
-    SELECT
-        n.notice_id,
-        s.email,
-        n.category,
-        n.subject,
-        GROUP_CONCAT(DISTINCT a.name SEPARATOR ', ') AS aircraft,
-        n.resolved,
-        n.archived,
-        n.notice_at,
-        n.deadline_at,
-        n.pending_reason,
-        nf.status,
-        n.additional_comments
-    FROM notices AS n
-    LEFT JOIN notifications AS nf
-    ON n.notice_id = nf.notice_id
-    LEFT JOIN staff AS s
-    ON s.staff_id = n.author_id
-    LEFT JOIN aircraft_notices AS an
-    ON an.notice_id = n.notice_id
-    LEFT JOIN aircraft AS a
-    ON a.aircraft_id = an.aircraft_id
-    WHERE n.deleted_at IS Null
-    AND nf.staff_id = %s
-    AND nf.notice_id = %s
+@timer
+def total_records(cursor: MySQLCursorAbstract, query: str, params: list) -> int:
     """
-    cursor.execute(query, [staff_id, notice_id])
-    return {
-        "statusCode": 200,
-        "headers": headers(),
-        "body": json.dumps(
-            cursor.fetchone(), indent=4, separators=(",", ":"), cls=DateTimeEncoder
-        ),
-    }
+    Returns the total number of records matching the query.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+
+    Returns:
+        int: The total number of records.
+    """
+    total_query = f"SELECT COUNT(*) as total_records FROM ({query}) AS initial_query"
+    cursor.execute(total_query, params)
+    result = cursor.fetchone()
+    assert isinstance(result, dict)
+    total_records = result["total_records"]
+    assert isinstance(total_records, int)
+    return total_records
+
+
+@timer
+def fetch_notices(
+    cursor: MySQLCursorAbstract, query: str, params: list, parameters: dict
+) -> list:
+    """
+    Fetches notice records with pagination and sorting.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        query (str): The SQL query string.
+        params (list): The list of query parameters.
+        parameters (dict): The query parameters for pagination and sorting.
+
+    Returns:
+        list: The list of notice records.
+    """
+    valid_columns = [
+        "notice_id",
+        "notice_name",
+        "archived",
+        "noticed_at",
+        "deadline_at",
+    ]
+    valid_orders = ["ASC", "DESC"]
+
+    if (
+        "sort_column" in parameters
+        and "order" in parameters
+        and parameters["sort_column"] in valid_columns
+        and parameters["order"] in valid_orders
+    ):
+        query += " ORDER BY %s %s"
+        params.extend([parameters["sort_column"], parameters["order"]])
+
+    query += " LIMIT %s OFFSET %s"
+    params.extend([int(parameters["limit"]), int(parameters["offset"])])
+
+    cursor.execute(query, params)
+    return cursor.fetchall()
+
+
+@timer
+def specific_aircraft_notices(cursor: MySQLCursorAbstract, notice_id: int) -> list:
+    """
+    Returns a list of aircraft linked with a specific notice ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        notice_id (int): The notice ID to query.
+
+    Returns:
+        list: The list of aircraft IDs.
+    """
+    query = "SELECT aircraft_id FROM aircraft_notices WHERE notice_id = %s"
+    cursor.execute(query, [notice_id])
+    return cursor.fetchall()
+
+
+@timer
+def specific_notices_staff(cursor: MySQLCursorAbstract, notice_id: int) -> list:
+    """
+    Returns a list of staff linked with a specific notice ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        notice_id (int): The notice ID to query.
+
+    Returns:
+        list: The list of aircraft IDs.
+    """
+    query = "SELECT staff_id FROM notices_staff WHERE notice_id = %s"
+    cursor.execute(query, [notice_id])
+    return cursor.fetchall()
+
+
+@timer
+def specific_documents_notices(cursor: MySQLCursorAbstract, notice_id: int) -> list:
+    """
+    Returns a list of document linked with a specific notice ID.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries.
+        notice_id (int): The notice ID to query.
+
+    Returns:
+        list: The list of documents.
+    """
+    query = "SELECT document_name FROM documents_notices WHERE notice_id = %s"
+    cursor.execute(query, [notice_id])
+    return cursor.fetchall()
+
+################################################################################

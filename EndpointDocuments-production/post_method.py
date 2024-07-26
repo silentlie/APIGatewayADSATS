@@ -8,9 +8,12 @@ def post_method(body: dict) -> dict:
 
     Args:
         body (dict): The request body containing the document details and optional aircraft IDs.
+                     Must include 'document_name', 'archived', 'created_at', 'staff_id', and 'subcategory_id'.
+                     Optionally includes 'staff_ids' for linking aircraft records.
 
     Returns:
         dict: The HTTP response dictionary with status code, headers, and body.
+              Includes the newly created 'document_id' or error details.
     """
     connection = None
     cursor = None
@@ -75,7 +78,7 @@ def insert_document(cursor: MySQLCursorAbstract, body: dict) -> int:
         staff_id,
         subcategory_id
     )
-    VALUES (%s, %s, %s, %s)
+    VALUES (%s, %s, %s, %s, %s)
     """
     params = [
         body["document_name"],
@@ -113,9 +116,9 @@ def insert_aircraft_documents(
     INSERT INTO aircraft_documents (document_id, aircraft_id)
     VALUES (%s, %s)
     """
-    records_to_insert = [(document_id, staff_id) for staff_id in aircraft_ids]
+    records_to_insert = [(document_id, aircraft_id) for aircraft_id in aircraft_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(f"{cursor.rowcount} records successfully insseted")
+    print(f"{cursor.rowcount} records successfully inserted")
 
 
 ################################################################################
