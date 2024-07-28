@@ -1,39 +1,49 @@
-import json
 from get_method import get_method
+from helper import json_response, parse_body, timer
 from patch_method import patch_method
 from post_method import post_method
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH'
 
-def lambda_handler(event, context):
+@timer
+def lambda_handler(event: dict, context: dict) -> dict:
+    """
+    AWS Lambda handler function to process incoming API requests.
+
+    Args:
+        event (dict): The event dict containing the request data.
+        context (dict): The context dict providing runtime information to the handler.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    # Extract the HTTP method from the event
     method = event.get("httpMethod")
-    body_str = event.get("body")
-    parameters = event.get("queryStringParameters")
-    
-    print(f"Method: {method}")
-    print(f"Body: {body_str}")
-    print(f"Parameters: {parameters}")
-    
-    body = {}
-    if isinstance(body_str, str):
-        body = json.loads(body_str)
-    else:
-        body = body_str
-    
-    if method == "GET":
+    assert isinstance(method, str), "httpMethod must be a string"
+    print(f"Received request with method: {method}")
+
+    # Handle different HTTP methods
+    if method == "OPTIONS":
+        # Return OK response for preflight requests
+        return json_response(200, "OK")
+    elif method == "GET":
+        # Handle GET request with query parameters
+        parameters = event.get("queryStringParameters")
+        assert isinstance(
+            parameters, dict
+        ), "queryStringParameters must be a dictionary"
+        # print(f"Query parameters: {parameters}")
         return get_method(parameters)
-    if method == "POST":
+    elif method == "POST":
+        # Handle POST request with body parsing
+        body = parse_body(event.get("body"))
         return post_method(body)
-    if method == "PATCH":
+    elif method == "PATCH":
+        # Handle PATCH request with body parsing
+        body = parse_body(event.get("body"))
         return patch_method(body)
     else:
-        return {
-            'statusCode': 405,
-            'headers': {
-                'Access-Control-Allow-Headers': '*',
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': allowed_headers
-            },
-            'body': json.dumps("Method not allowed")
-        }
+        # Return method not allowed response for unsupported methods
+        return json_response(405, "Method not allowed")
 
+
+################################################################################

@@ -4,15 +4,13 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 @timer
 def patch_method(body: dict) -> dict:
     """
-    Handles PATCH requests to update an existing document record.
+    Handles PATCH requests to update an existing notice record.
 
     Args:
-        body (dict): The request body containing the document details to update.
-                     Must include 'document_id' and optionally 'archived'.
+        body (dict): The request body containing the notice details to update.
 
     Returns:
         dict: The HTTP response dictionary with status code, headers, and body.
-              Includes the updated 'document_id' or error details.
     """
     connection = None
     cursor = None
@@ -23,19 +21,35 @@ def patch_method(body: dict) -> dict:
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
 
-        # Ensure document_id is in body
-        if "document_id" not in body:
-            raise ValueError("Missing document_id in the request body")
+        # Ensure notice_id is in body
+        if "notice_id" not in body:
+            raise ValueError("Missing notice_id in the request body")
 
-        document_id = body["document_id"]
+        notice_id = body["notice_id"]
 
-        # Update document fields if present in the request body
-        if "archived" in body:
-            update_archived(cursor, body["archived"], document_id)
+        updatable_fields = [
+            "subject",
+            "staff_id",
+            "archived",
+            "details",
+            "noticed_at",
+            "deadline_at",
+        ]
+        # Update notice fields if present in the request body
+        update_data = {key: body[key] for key in body if key in  updatable_fields}
+        if update_data:
+            update_notice(cursor, update_data, notice_id)
+        if "aircraft" in body:
+            delete_aircraft_notices(cursor, notice_id)
+            insert_aircraft_notices(cursor, body["aircraft"], notice_id)
+        if "delete_documents" in body:
+            delete_documents_notices(cursor, body["delete_documents"], notice_id)
+        if "insert_documents" in body:
+            insert_documents_notices(cursor, body["insert_documents"], notice_id)
 
         # Commit the transaction
         connection.commit()
-        return_body = {"document_id": document_id}
+        return_body = {"notice_id": notice_id}
         status_code = 200
 
     except Error as e:
@@ -62,25 +76,117 @@ def patch_method(body: dict) -> dict:
 
 
 @timer
-def update_archived(
-    cursor: MySQLCursorAbstract, archived: int, document_id: int
-) -> None:
+def update_notice(cursor: MySQLCursorAbstract, update_data: dict, notice_id: int) -> None:
     """
-    Update the archived status of a document.
+    Updates the 'notices' table for a specific notice_id with the provided data.
 
     Args:
         cursor (MySQLCursorAbstract): The database cursor for executing queries.
-        archived (int): The new archived status (e.g., 0 for not archived, 1 for archived).
-        document_id (int): The ID of the document to update.
+        update_data (dict):
+        notice_id (int): The ID of the notice to update.
     """
-    update_query = """
-        UPDATE documents
-        SET archived = %s
-        WHERE document_id = %s
+    # Extract the fields and params from the dictionary
+    fields = update_data.keys()
+    params = list(update_data.values())  # Convert dict values to a list of params
+    # Create the SET clause dynamically based on the provided fields
+    set_clause = ", ".join([f"{field} = %s" for field in fields])
+
+    # Create the update query
+    update_query = f"""
+        UPDATE notices
+        SET {set_clause}
+        WHERE notice_id = %s
     """
-    params = [archived, document_id]
+
+    # Add the notice_id to the end of the params list
+    params.append(notice_id)
+
+    # Execute the query
     cursor.execute(update_query, params)
     print(f"{cursor.rowcount} record(s) successfully updated")
+
+
+@timer
+def delete_aircraft_notices(cursor: MySQLCursorAbstract, notice_id: int) -> None:
+    """
+    ...
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries
+        notice_id (int): The ID of the notice
+    """
+    query = """
+        DELETE FROM aircraft_notices
+        WHERE aircraft_id = %s
+    """
+    params = (notice_id,)
+    cursor.execute(query, params)
+    print(f"{cursor.rowcount} record(s) successfully deleted")
+
+
+@timer
+def insert_aircraft_notices(
+    cursor: MySQLCursorAbstract, aircraft_ids: list, notice_id: int
+) -> None:
+    """
+    ...
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries
+        aircraft_ids (list): ...
+        notice_id (int): The ID of the notice
+    """
+    query = """
+        INSERT INTO aircraft_notices (notice_id, aircraft_id)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [(notice_id, aircraft_id) for aircraft_id in aircraft_ids]
+    cursor.executemany(query, records_to_insert)
+    print(f"{cursor.rowcount} record(s) successfully inserted")
+
+
+@timer
+def delete_documents_notices(
+    cursor: MySQLCursorAbstract, documents: list, notice_id: int
+) -> None:
+    """
+    ...
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries
+        notice_id (int): The ID of the notice
+    """
+    query = """
+        DELETE FROM documents_notices
+        WHERE notice_id = %s
+        AND document_name = %s
+    """
+    records_to_delete = [(notice_id, document_name) for document_name in documents]
+    cursor.executemany(query, records_to_delete)
+    print(f"{cursor.rowcount} record(s) successfully deleted")
+
+
+@timer
+def insert_documents_notices(
+    cursor: MySQLCursorAbstract, documents: list, notice_id: int
+) -> None:
+    """
+    Inserts records into the documents_notices linking table.
+
+    Args:
+        cursor (MySQLCursorAbstract): The database cursor for executing queries
+        notice_id (int): The ID of the notice
+        documents (list): The list of documents to link with the notice.
+    Returns:
+        None
+    """
+    query = """
+        INSERT INTO documents_notices (notice_id, document_name)
+        VALUES (%s, %s)
+    """
+    records_to_insert = [(notice_id, document_name) for document_name in documents]
+    cursor.executemany(query, records_to_insert)
+    print(f"{cursor.rowcount} record(s) successfully inserted")
 
 
 ################################################################################

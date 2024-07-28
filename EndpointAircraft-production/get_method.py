@@ -187,3 +187,9 @@ def specific_aircraft_staff(cursor: MySQLCursorAbstract, aircraft_id: int) -> li
 
 
 ################################################################################
+
+# parameters = {
+#     "limit": 10,
+#     "offset": 0
+# }
+# get_method(parameters)

@@ -26,11 +26,11 @@ def post_method(body: dict) -> dict:
         # Insert the new notice record and get the ID
         notice_id = insert_notice(cursor, body)
 
-        # Insert linking records if any aircraft IDs are provided
+        #
         if "aircraft_ids" in body:
             insert_aircraft_notices(cursor, notice_id, body["aircraft_ids"])
-        if "staff_ids" in body:
-            insert_notices_staff(cursor, notice_id, body["staff_ids"])
+        if "documents" in body:
+            insert_documents_notices(cursor, notice_id, body["documents"])
 
         # Commit the transaction
         connection.commit()
@@ -102,32 +102,6 @@ def insert_notice(cursor: MySQLCursorAbstract, body: dict) -> int:
 
 
 @timer
-def insert_notices_staff(
-    cursor: MySQLCursorAbstract, notice_id: int, staff_ids: list
-) -> None:
-    """
-    This is the notification table consist notice_id and staff_id, which are the recipients, also whether and when it was read by the recipient
-    Inserts records into the notices_staff linking table.
-
-    Args:
-        cursor (MySQLCursorAbstract): The database cursor for executing queries.
-        notice_id (int): The ID of the notice.
-        staff_ids (list): The list of staff IDs to link with the notice.
-
-    Returns:
-        None
-    """
-    insert_query = """
-    INSERT INTO notices_staff (notice_id, staff_id, read, read_at)
-    VALUES (%s, %s, 0, NULL)
-    ON DUPLICATE KEY UPDATE read = 0, read_at = NULL
-    """
-    records_to_insert = [(notice_id, staff_id) for staff_id in staff_ids]
-    cursor.executemany(insert_query, records_to_insert)
-    print(f"{cursor.rowcount} records successfully inserted")
-
-
-@timer
 def insert_aircraft_notices(
     cursor: MySQLCursorAbstract, notice_id: int, aircraft_ids: list
 ) -> None:
@@ -167,8 +141,8 @@ def insert_documents_notices(
         None
     """
     insert_query = """
-    INSERT INTO documents_notices (notice_id, document_name)
-    VALUES (%s, %s)
+        INSERT INTO documents_notices (notice_id, document_name)
+        VALUES (%s, %s)
     """
     records_to_insert = [(notice_id, document_name) for document_name in documents]
     cursor.executemany(insert_query, records_to_insert)
