@@ -237,13 +237,13 @@ def specific_documents_notices(cursor: MySQLCursorAbstract, notice_id: int) -> l
     return cursor.fetchall()
 
 ################################################################################
-parameters = {
-    "staff_id": 1,
-    "tab": "inbox",
-    "limit": 10,
-    "offset": 0,
-}
+# parameters = {
+#     "staff_id": 1,
+#     "tab": "inbox",
+#     "limit": 10,
+#     "offset": 0,
+# }
 # parameters = {
 #     "notice_id": 1
 # }
-get_method(parameters)
+# get_method(parameters)
