@@ -1,38 +1,39 @@
-import json
 from get_method import get_method
+from helper import json_response, timer
 
-allowed_headers = 'OPTIONS,POST,GET,PATCH,DELETE'
 
-def lambda_handler(event, context):
+@timer
+def lambda_handler(event: dict, context: dict) -> dict:
+    """
+    AWS Lambda handler function to process incoming API requests.
+
+    Args:
+        event (dict): The event dict containing the request data.
+        context (dict): The context dict providing runtime information to the handler.
+
+    Returns:
+        dict: The HTTP response dictionary with status code, headers, and body.
+    """
+    # Extract the HTTP method from the event
     method = event.get("httpMethod")
-    body_str = event.get("body")
-    parameters = event.get("queryStringParameters")
+    assert isinstance(method, str), "httpMethod must be a string"
+    print(f"Received request with method: {method}")
 
-    print(method)
-    print(body_str)
-    print(parameters)
-    
+    # Handle different HTTP methods
     if method == "OPTIONS":
-        return {
-            'statusCode': 200,
-            'headers': headers(),
-            'body': json.dumps("OK")
-        }
+        # Return OK response for preflight requests
+        return json_response(200, "OK")
     elif method == "GET":
-        return get_method()
+        # Handle GET request with query parameters
+        parameters = event.get("queryStringParameters")
+        assert isinstance(
+            parameters, dict
+        ), "queryStringParameters must be a dictionary"
+        # print(f"Query parameters: {parameters}")
+        return get_method(parameters)
     else:
-        return {
-            'statusCode': 405,
-            'headers': headers(),
-            'body': json.dumps("Method now allow")
-        }
-    
-## HELPERS ##
-# Response headers
-def headers():
-    return {
-        'Access-Control-Allow-Headers': '*',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': allowed_headers
-    }
-## HELPERS ##
+        # Return method not allowed response for unsupported methods
+        return json_response(405, "Method not allowed")
+
+
+################################################################################
