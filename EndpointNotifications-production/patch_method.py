@@ -68,8 +68,7 @@ def update_notices_staff(
     """
     update_query = """
     UPDATE notices_staff
-    SET read = 1
-    AND read = CURRENT_TIMESTAMP
+    SET read_at = CURRENT_TIMESTAMP
     WHERE staff_id = %s
     AND notice_id = %s
     """

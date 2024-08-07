@@ -1,7 +1,7 @@
 import json
 import os
 import timeit
-from datetime import datetime
+from datetime import date, datetime
 from functools import wraps
 from typing import Any
 
@@ -86,7 +86,7 @@ class DateTimeEncoder(json.JSONEncoder):
     """
 
     def default(self, o: Any):
-        if isinstance(o, datetime):
+        if isinstance(o, (datetime, date,)):
             return o.isoformat()
         return super().default(o)
 

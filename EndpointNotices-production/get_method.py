@@ -71,13 +71,7 @@ def build_query(parameters: dict) -> tuple:
     Returns:
         tuple: The SQL query string and list of parameters.
     """
-    query = """
-    SELECT
-        n.*
-    FROM notices AS n
-    JOIN notices_staff AS ns
-    ON n.notice_id = ns.notice_id
-    """
+    query = ""
     filters = []
     params = []
 
@@ -88,8 +82,21 @@ def build_query(parameters: dict) -> tuple:
     if "tab" in parameters:
         tab = parameters["tab"]
         if tab == "inbox":
-            filters.append("n.staff_id = %s")
+            query = """
+            SELECT
+                *
+            FROM notices
+            """
+            filters.append("staff_id = %s")
         elif tab == "sent":
+            query = """
+            SELECT
+                n.*,
+                ns.read_at
+            FROM notices AS n
+            JOIN notices_staff AS ns
+            ON n.notice_id = ns.notice_id
+            """
             filters.append("ns.staff_id = %s")
         else:
             raise ValueError("Invalid tab value")
@@ -159,6 +166,7 @@ def fetch_notices(
         "archived",
         "noticed_at",
         "deadline_at",
+        "read_at"
     ]
     valid_orders = ["ASC", "DESC"]
 
@@ -229,3 +237,13 @@ def specific_documents_notices(cursor: MySQLCursorAbstract, notice_id: int) -> l
     return cursor.fetchall()
 
 ################################################################################
+parameters = {
+    "staff_id": 1,
+    "tab": "inbox",
+    "limit": 10,
+    "offset": 0,
+}
+# parameters = {
+#     "notice_id": 1
+# }
+get_method(parameters)

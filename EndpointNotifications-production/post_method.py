@@ -70,8 +70,8 @@ def insert_notices_staff(
     """
     insert_query = """
     INSERT INTO notices_staff (notice_id, staff_id, read, read_at)
-    VALUES (%s, %s, 0, NULL)
-    ON DUPLICATE KEY UPDATE read = 0, read_at = NULL
+    VALUES (%s, %s, NULL)
+    ON DUPLICATE KEY UPDATE read_at = NULL
     """
     records_to_insert = [(notice_id, staff_id) for staff_id in staff_ids]
     cursor.executemany(insert_query, records_to_insert)
