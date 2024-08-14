@@ -32,8 +32,6 @@ def patch_method(body: dict) -> dict:
             update_staff_name(cursor, body["staff_name"], staff_id)
         if "archived" in body:
             update_archived(cursor, body["archived"], staff_id)
-        if "description" in body:
-            update_description(cursor, body["description"], staff_id)
         if "aircraft_ids" in body:
             insert_aircraft_staff(cursor, body["aircraft_ids"], staff_id)
         if "role_ids" in body:
@@ -110,27 +108,6 @@ def update_archived(cursor: MySQLCursorAbstract, archived: int, staff_id: int) -
     cursor.execute(update_query, params)
     print(f"{cursor.rowcount} record(s) successfully updated")
 
-
-@timer
-def update_description(
-    cursor: MySQLCursorAbstract, description: str, staff_id: int
-) -> None:
-    """
-    Updates the description for a given staff_id.
-
-    Args:
-        cursor (MySQLCursorAbstract): The database cursor for executing queries.
-        description (str): The new description to set.
-        staff_id (int): The ID of the staff record to update.
-    """
-    update_query = """
-        UPDATE staff
-        SET description = %s
-        WHERE staff_id = %s
-    """
-    params = [description, staff_id]
-    cursor.execute(update_query, params)
-    print(f"{cursor.rowcount} record(s) successfully updated")
 
 
 @timer

@@ -12,7 +12,7 @@ DROP SCHEMA IF EXISTS `adsats_database` ;
 -- -----------------------------------------------------
 -- Schema adsats_database
 -- -----------------------------------------------------
-CREATE SCHEMA IF NOT EXISTS `adsats_database` DEFAULT CHARACTER SET utf8 ;
+CREATE SCHEMA IF NOT EXISTS `adsats_database` DEFAULT CHARACTER SET utf8mb4 ;
 SHOW WARNINGS;
 USE `adsats_database` ;
 
@@ -459,41 +459,6 @@ SHOW WARNINGS;
 CREATE INDEX `fk_notices_staff_notice_idx` USING BTREE ON `adsats_database`.`notices_staff` (`notice_id`) VISIBLE;
 
 SHOW WARNINGS;
-USE `adsats_database`;
-
-DELIMITER $$
-
-USE `adsats_database`$$
-DROP TRIGGER IF EXISTS `adsats_database`.`roles_BEFORE_UPDATE` $$
-SHOW WARNINGS$$
-USE `adsats_database`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `adsats_database`.`roles_BEFORE_UPDATE` BEFORE UPDATE ON `roles` FOR EACH ROW
-BEGIN
-	DECLARE msg VARCHAR(255);
-    IF OLD.role_id IN (0, 1) THEN  -- specific ids need to protect
-        SET msg = CONCAT('Cannot update row with id ', OLD.role_id, '. Update restricted.');
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = msg;
-    END IF;
-END$$
-
-SHOW WARNINGS$$
-
-USE `adsats_database`$$
-DROP TRIGGER IF EXISTS `adsats_database`.`roles_BEFORE_DELETE` $$
-SHOW WARNINGS$$
-USE `adsats_database`$$
-CREATE DEFINER = CURRENT_USER TRIGGER `adsats_database`.`roles_BEFORE_DELETE` BEFORE DELETE ON `roles` FOR EACH ROW
-BEGIN
-	DECLARE msg VARCHAR(255);
-    IF OLD.role_id IN (0, 1) THEN  -- specific ids need to protect
-        SET msg = CONCAT('Cannot delete row with id ', OLD.role_id, '. Deletion restricted.');
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = msg;
-    END IF;
-END$$
-
-SHOW WARNINGS$$
-
-DELIMITER ;
 
 SET SQL_MODE=@OLD_SQL_MODE;
 SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

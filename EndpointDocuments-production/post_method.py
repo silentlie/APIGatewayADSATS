@@ -9,7 +9,7 @@ def post_method(body: dict) -> dict:
     Args:
         body (dict): The request body containing the document details and optional aircraft IDs.
                      Must include 'document_name', 'archived', 'created_at', 'staff_id', and 'subcategory_id'.
-                     Optionally includes 'staff_ids' for linking aircraft records.
+                     Optionally includes 'aircraft_ids' for linking aircraft records.
 
     Returns:
         dict: The HTTP response dictionary with status code, headers, and body.
@@ -29,8 +29,8 @@ def post_method(body: dict) -> dict:
         document_id = insert_document(cursor, body)
 
         # Insert linking records if any staff IDs are provided
-        if "staff_ids" in body:
-            insert_aircraft_documents(cursor, document_id, body["staff_ids"])
+        if "aircraft_ids" in body:
+            insert_aircraft_documents(cursor, document_id, body["aircraft_ids"])
 
         # Commit the transaction
         connection.commit()

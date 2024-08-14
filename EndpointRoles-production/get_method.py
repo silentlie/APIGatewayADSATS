@@ -180,7 +180,8 @@ def specific_role_staff(
     WHERE role_id = %s
     """
     cursor.execute(query, [role_id])
-    return [num for (num,) in cursor.fetchall()]
+    """return [num for (num,) in cursor.fetchall()]"""
+    return cursor.fetchall()
 
 
 ################################################################################

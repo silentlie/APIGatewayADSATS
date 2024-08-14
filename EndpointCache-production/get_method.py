@@ -2,7 +2,7 @@ from helper import Error, MySQLCursorAbstract, connect_to_db, json_response, tim
 
 
 @timer
-def get_method(parameters: dict) -> dict:
+def get_method(parameters) -> dict:
     """
     Handles GET requests to fetch the names and IDs of staff, aircraft, categories, subcategories, and roles.
 
@@ -36,12 +36,12 @@ def get_method(parameters: dict) -> dict:
         status_code = 200
     except Error as e:
         # Handle SQL error
-        return_body = {"error": e._full_msg}
+        return_body = {"SQL-error": e._full_msg}
         if e.errno == 1062:
             status_code = 409  # Conflict error
     except Exception as e:
         # Handle general error
-        return_body = {"error": str(e)}
+        return_body = {"Pythonerror": str(e)}
     finally:
         # Close cursor and connection
         if cursor:
@@ -52,7 +52,7 @@ def get_method(parameters: dict) -> dict:
             print("MySQL connection is closed")
 
     response = json_response(status_code, return_body)
-    print(response)
+    # print(response)
     return response
 
 

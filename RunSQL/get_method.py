@@ -11,21 +11,25 @@ def get_method(parameters):
         connection = connect_to_db()
         cursor = connection.cursor(dictionary=True)
         query = read_file(parameters["file_name"])
-        cursor.execute(query, multi=True)
-        if query.strip().upper().startswith("SELECT"):
-            return_body = cursor.fetchall()
-            print(return_body)
-            for row in return_body:
-                print(row)
+        # Determine if the query starts with SELECT
+        is_select_query = query.strip().upper().startswith("SELECT")
+        multi = not is_select_query
+
+        # Execute query with the appropriate multi parameter
+        if multi:
+            for result in cursor.execute(query, multi=True): # type: ignore
+                if result:
+                    return_body = result.fetchall()
+                    print(return_body)
         else:
-            connection.commit()
-            return_body = "Query executed successfully and changes committed"
+            cursor.execute(query)
+            return_body = cursor.fetchall()
             print(return_body)
 
         status_code = 200
     except Error as e:
         # Handle SQL error
-        return_body = {"error": e._full_msg}
+        return_body = {"SQL_error": e._full_msg}
         if e.errno == 1062:
             status_code = 409  # Conflict error
     except Exception as e:
@@ -49,3 +53,6 @@ def get_method(parameters):
 def read_file(file_path):
     with open(file_path, "r") as file:
         return file.read()
+
+parameters = {"file_name": r"G:\ADSATS\APIGatewayADSATS\RunSQL\07.08.2024.sql"}
+get_method(parameters)

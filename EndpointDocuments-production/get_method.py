@@ -28,6 +28,10 @@ def get_method(parameters: dict) -> dict:
                 "total_records": total_records(cursor, query, params),
                 "documents": fetch_documents(cursor, query, params, parameters),
             }
+        elif "document_id" in parameters:
+            return_body = {
+                "aircraft_ids": specific_aircraft_documents(cursor, parameters["document_id"])
+            }
         else:
             raise ValueError("Invalid use of method")
 

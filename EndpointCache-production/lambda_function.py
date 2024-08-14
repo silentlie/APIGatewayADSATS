@@ -29,7 +29,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
         assert isinstance(
             parameters, dict
         ), "queryStringParameters must be a dictionary"
-        # print(f"Query parameters: {parameters}")
+        print(f"Query parameters: {parameters}")
         return get_method(parameters)
     else:
         # Return method not allowed response for unsupported methods
@@ -37,3 +37,7 @@ def lambda_handler(event: dict, context: dict) -> dict:
 
 
 ################################################################################
+# parameters = {
+#     "cache": ""
+# }
+# get_method(parameters)

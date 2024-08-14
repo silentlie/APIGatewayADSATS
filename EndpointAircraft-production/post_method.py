@@ -113,7 +113,7 @@ def insert_aircraft_staff(
     """
     records_to_insert = [(aircraft_id, staff_id) for staff_id in staff_ids]
     cursor.executemany(insert_query, records_to_insert)
-    print(f"{cursor.rowcount} records successfully insseted")
+    print(f"{cursor.rowcount} records successfully inserted")
 
 
 ################################################################################

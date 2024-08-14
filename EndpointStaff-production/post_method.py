@@ -75,15 +75,14 @@ def insert_staff(cursor: MySQLCursorAbstract, body: dict) -> int:
         int: The ID of the newly inserted staff record.
     """
     query = """
-    INSERT INTO staff (staff_name, email, archived, created_at, updated_at)
-    VALUES (%s, %s, %s, %s, %s)
+    INSERT INTO staff (staff_name, email, archived, created_at)
+    VALUES (%s, %s, %s, %s)
     """
     params = [
         body["staff_name"],
         body["email"],
         body["archived"],
         body["created_at"],
-        body["updated_at"],
     ]
     cursor.execute(query, params)
     cursor.execute("SELECT LAST_INSERT_ID() AS id")

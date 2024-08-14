@@ -12,6 +12,29 @@ from mysql.connector.abstracts import MySQLCursorAbstract  # noqa: F401
 allowed_headers = "OPTIONS,GET"
 
 
+def timer(func):
+    """
+    Decorator that prints the execution time of the decorated function.
+
+    Args:
+        func (Callable): The function to be timed.
+
+    Returns:
+        Callable: The wrapped function with timing.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print(f"Start {func.__name__}")
+        _start_time = timeit.default_timer()
+        _result = func(*args, **kwargs)
+        _end_time = timeit.default_timer()
+        print(f"{func.__name__} took {_end_time - _start_time} seconds")
+        return _result
+
+    return wrapper
+
+@timer
 def parse_body(body: Any) -> dict:
     """
     Parses the body of a request to ensure it is JSON.
@@ -38,7 +61,7 @@ def parse_body(body: Any) -> dict:
     else:
         raise ValueError("Body is not JSON")
 
-
+@timer
 def connect_to_db():
     """
     Connects to the MySQL database using credentials from environment variables.
@@ -53,7 +76,7 @@ def connect_to_db():
         database="adsats_database",
     )
 
-
+@timer
 def json_response(status_code: int, body: Any) -> dict:
     """
     Generates a JSON response with the given status code and body.
@@ -74,29 +97,6 @@ def json_response(status_code: int, body: Any) -> dict:
         },
         "body": json.dumps(body, indent=4, separators=(",", ":")),
     }
-
-
-def timer(func):
-    """
-    Decorator that prints the execution time of the decorated function.
-
-    Args:
-        func (Callable): The function to be timed.
-
-    Returns:
-        Callable: The wrapped function with timing.
-    """
-
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        print(f"Start {func.__name__}")
-        _start_time = timeit.default_timer()
-        _result = func(*args, **kwargs)
-        _end_time = timeit.default_timer()
-        print(f"{func.__name__} took {_end_time - _start_time} seconds")
-        return _result
-
-    return wrapper
 
 
 ################################################################################
